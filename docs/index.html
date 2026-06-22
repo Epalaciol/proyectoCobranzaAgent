@@ -673,7 +673,15 @@
             </div>
             <div class="flex items-start gap-2">
               <span class="text-yellow-500 font-bold mt-0.5">▸</span>
-              <div><strong>Opt-out en español:</strong> STOP, ALTO, DETENER, PARA, NO ME CONTACTES, NO ME INTERESA → cierre permanente inmediato. NO AHORA, DESPUÉS, MAÑANA → follow-up programado.</div>
+              <div><strong>Opt-out temporal (Ley 306/2026):</strong> STOP, ALTO, PARA, NO ME CONTACTES → suspensión de contacto por la campaña activa (mínimo 30 días). No es un bloqueo permanente: si el cliente paga o inicia contacto voluntariamente, puede ser reincorporado. NUNCA MÁS, ELIMÍNAME → opt-out del canal WhatsApp hasta que el cliente lo revoque.</div>
+            </div>
+            <div class="flex items-start gap-2">
+              <span class="text-yellow-500 font-bold mt-0.5">▸</span>
+              <div><strong>Franjas horarias — Ley 306 de 2026 (Panamá):</strong> El contacto y el envío de mensajes está restringido a <strong>lunes–viernes 8:00am–6:00pm</strong> y <strong>sábados 8:00am–3:00pm</strong>. Domingos, festivos y días de duelo nacional están prohibidos. Los archivos de campaña procesados fuera de estas franjas se encolan y se ejecutan al inicio del siguiente período hábil.</div>
+            </div>
+            <div class="flex items-start gap-2">
+              <span class="text-yellow-500 font-bold mt-0.5">▸</span>
+              <div><strong>Un solo contacto efectivo por día:</strong> La Ley 306 establece que una vez establecida comunicación efectiva con el deudor en un día, no se puede volver a contactar ese mismo día por ningún otro canal.</div>
             </div>
             <div class="flex items-start gap-2">
               <span class="text-yellow-500 font-bold mt-0.5">▸</span>
@@ -909,6 +917,20 @@
               <td class="p-4 text-gray-700"><strong>El contrato de servicio incluye consentimiento de contacto por WhatsApp</strong></td>
               <td class="p-4 text-gray-500">Riesgo legal de contactar clientes sin opt-in</td>
               <td class="p-4 text-gray-500">Campaña de opt-in previa al lanzamiento; solo se contacta a quienes confirmen</td>
+            </tr>
+            <tr class="bg-yellow-50">
+              <td class="p-4 text-gray-700">
+                <strong>Franjas horarias de contacto — Ley 306 de 2026</strong>
+                <div class="mt-1 text-xs text-yellow-700 font-medium">Marco legal vigente — no es supuesto</div>
+                <div class="mt-1 text-xs text-gray-500">Lun–Vie: 8:00am–6:00pm · Sáb: 8:00am–3:00pm · Dom/festivos: prohibido · Un solo contacto efectivo por día por canal</div>
+              </td>
+              <td class="p-4 text-gray-500">Contacto fuera de franja = infracción sancionable por ACODECO</td>
+              <td class="p-4 text-gray-500">El sistema bloquea el envío fuera de franja por diseño (AppConfig + Step Functions). Campañas cargadas a medianoche se ejecutan a las 8:00am del siguiente día hábil.</td>
+            </tr>
+            <tr>
+              <td class="p-4 text-gray-700"><strong>Opt-out es temporal (por campaña), no permanente por defecto</strong></td>
+              <td class="p-4 text-gray-500">Si el cliente dice STOP y luego paga o renueva contrato, quedaría bloqueado innecesariamente</td>
+              <td class="p-4 text-gray-500">STOP/ALTO → suspensión 30 días en la campaña activa. NUNCA MÁS/ELIMÍNAME → opt-out de canal hasta revocación manual.</td>
             </tr>
             <tr>
               <td class="p-4 text-gray-700"><strong>Bedrock (Claude 3.5 Haiku) tiene latencia &lt;3s por invocación en us-east-1</strong></td>

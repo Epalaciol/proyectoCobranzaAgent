@@ -159,20 +159,95 @@ Inicio de negociación
 
 **Sobre el límite de 35 turnos:** El límite por defecto es 35 (ajustado para el cliente latinoamericano que tiende a la evasión y el diálogo extenso). Es configurable en AppConfig sin redesplegar código. En el turno 30, el agente ofrece proactivamente el canal humano. Si el cliente prefiere continuar y hay progreso activo en la conversación, un operador puede extender el límite desde AppConfig en tiempo real.
 
+### Franjas horarias de contacto — Ley 306 de 2026 (Panamá)
+
+La **Ley 306, aprobada el 18 de marzo de 2026** por la Asamblea Nacional de Panamá con 41 votos a favor, establece restricciones explícitas para el contacto de cobranza extrajudicial. Es ley vigente, no un supuesto de diseño.
+
+| Día | Franja permitida |
+|---|---|
+| Lunes – Viernes | 8:00 AM – 6:00 PM |
+| Sábado | 8:00 AM – 3:00 PM |
+| Domingo | Prohibido |
+| Festivos y duelo nacional | Prohibido |
+
+**Regla adicional:** Una vez establecida comunicación efectiva con el deudor en un día, no se puede volver a contactar ese mismo día por ningún otro canal (incluyendo WhatsApp después de una llamada, o viceversa).
+
+**Fuente:** Infobae Panamá, La Estrella de Panamá, Panamá América — marzo 2026. Organismo sancionador: ACODECO.
+
+#### Implementación técnica del bloqueo horario
+
+```python
+import pytz
+from datetime import datetime
+
+ZONA_HORARIA = pytz.timezone("America/Panama")
+
+FRANJAS_PERMITIDAS = {
+    0: ("08:00", "18:00"),  # Lunes
+    1: ("08:00", "18:00"),  # Martes
+    2: ("08:00", "18:00"),  # Miércoles
+    3: ("08:00", "18:00"),  # Jueves
+    4: ("08:00", "18:00"),  # Viernes
+    5: ("08:00", "15:00"),  # Sábado
+    # 6 = Domingo: no existe en el dict → bloqueado
+}
+
+def es_horario_permitido(festivos: set) -> bool:
+    ahora = datetime.now(ZONA_HORARIA)
+    if ahora.date() in festivos:
+        return False
+    franja = FRANJAS_PERMITIDAS.get(ahora.weekday())
+    if not franja:
+        return False
+    inicio = datetime.strptime(franja[0], "%H:%M").time()
+    fin    = datetime.strptime(franja[1], "%H:%M").time()
+    return inicio <= ahora.time() <= fin
+```
+
+La lista de festivos se gestiona en **AppConfig** (`festivos_panama`) — el equipo comercial la actualiza sin tocar código.
+
+#### Lógica de encolamiento en Step Functions
+
+Cuando se carga un CSV de campaña fuera de la franja permitida (ej. proceso batch a las 3:00 AM), Step Functions no envía los mensajes inmediatamente. En cambio:
+
+1. Escribe los registros en SQS con un `DelaySeconds` calculado hasta el inicio del siguiente período hábil
+2. Si el día siguiente es festivo, el delay se extiende al siguiente día hábil disponible
+3. El cliente recibe el mensaje a las 8:00 AM del primer día hábil — nunca en madrugada
+
+```python
+def calcular_delay_segundos(festivos: set) -> int:
+    ahora = datetime.now(ZONA_HORARIA)
+    if es_horario_permitido(festivos):
+        return 0  # enviar ahora
+    # Buscar próximo inicio de franja hábil
+    candidato = ahora.replace(hour=8, minute=0, second=0, microsecond=0)
+    if ahora.time() >= datetime.strptime("18:00", "%H:%M").time():
+        candidato += timedelta(days=1)
+    while True:
+        if candidato.date() not in festivos and candidato.weekday() in FRANJAS_PERMITIDAS:
+            break
+        candidato += timedelta(days=1)
+        candidato = candidato.replace(hour=8, minute=0, second=0)
+    return int((candidato - ahora).total_seconds())
+```
+
+SQS soporta un delay máximo de 15 minutos por mensaje. Para delays mayores (fin de semana largo), se usa **EventBridge Scheduler** con la fecha exacta de envío calculada en Step Functions.
+
 ### Gestión de opt-out en español
 
-El sistema reconoce variantes en español además del estándar inglés "STOP":
+**Opt-out temporal por campaña** (suspensión mínima 30 días — reincorporable si el cliente paga o contacta voluntariamente):
+- STOP, ALTO, PARA, NO ME CONTACTES, BASTA, NO QUIERO
 
-**Opt-out permanente** (no contactar en ninguna campaña futura del mismo canal):
-- STOP, ALTO, DETENER, PARA, NO ME CONTACTES, NO QUIERO QUE ME CONTACTEN, BASTA
+**Opt-out de canal WhatsApp** (hasta revocación manual o resolución de deuda):
+- NUNCA MÁS, ELIMÍNAME, NO ME CONTACTES MÁS, QUÍTENME DE SU LISTA
 
-**No interesado ahora** (programar follow-up):
-- NO AHORA, DESPUÉS, MÁS TARDE, MAÑANA, LLAMAME DESPUÉS, EN OTRO MOMENTO
+**No interesado ahora** (programar follow-up respetando franja horaria):
+- NO AHORA, DESPUÉS, MÁS TARDE, MAÑANA, EN OTRO MOMENTO, LUEGO
 
-**Solicitud de humano**:
+**Solicitud de humano** (escalar inmediatamente con contexto):
 - AGENTE, PERSONA, EJECUTIVO, HABLAR CON ALGUIEN, QUIERO UN HUMANO, ASESOR
 
-La detección es case-insensitive y tolera variantes con/sin acento.
+La detección es case-insensitive, tolera variantes con/sin acento, y se evalúa antes de invocar el LLM (capa 2 de seguridad). El estado de opt-out se persiste en DynamoDB con TTL de 30 días para opt-out temporal, o sin TTL para opt-out de canal.
 
 ---
 
