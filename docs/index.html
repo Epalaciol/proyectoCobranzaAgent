@@ -5,7 +5,6 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <title>Proyecto Ágil — Sistema Multi-Agente de Cobranza</title>
   <script src="https://cdn.tailwindcss.com"></script>
-  <script src="https://cdn.jsdelivr.net/npm/mermaid@10/dist/mermaid.min.js"></script>
   <style>
     html { scroll-behavior: smooth; }
     .nav-link { transition: color 0.2s, border-color 0.2s; }
@@ -19,7 +18,7 @@
     .tag-legal{ background: #fef9c3; color: #854d0e; }
     pre { background: #1e293b; color: #e2e8f0; border-radius: 8px; padding: 1.25rem; overflow-x: auto; font-size: 0.82rem; line-height: 1.6; }
     code { font-family: 'Menlo', 'Monaco', monospace; }
-    .mermaid { display: flex; justify-content: center; }
+    .arch-img { width: 100%; border-radius: 12px; }
     .metric-card { border-left: 4px solid; }
     .metric-tech { border-color: #3b82f6; background: #eff6ff; }
     .metric-biz  { border-color: #22c55e; background: #f0fdf4; }
@@ -120,49 +119,8 @@
       <h2 class="text-2xl font-bold text-gray-900 mb-2">Arquitectura AWS</h2>
       <p class="text-gray-500 text-sm mb-8">100% Serverless — escala de cero a miles de conversaciones sin infraestructura fija</p>
 
-      <div class="bg-white rounded-xl border border-gray-200 p-6 overflow-x-auto">
-        <div class="mermaid">
-flowchart TD
-    User(["👤 Cliente en WhatsApp"]) <-->|Meta API| Meta["Meta WhatsApp\nCloud API"]
-
-    subgraph AWS ["☁️ AWS Cloud — Región LLA"]
-        WAF["AWS WAF\nProtección entrada"]
-        APIGW["API Gateway\nHTTP API"]
-        SQS["SQS FIFO\nIngesta desacoplada"]
-
-        subgraph Agent ["Lambda — Orquestador"]
-            Sig["① Validar firma Meta"]
-            Logic["② ReAct + Tools"]
-        end
-
-        subgraph Bedrock ["Amazon Bedrock"]
-            GR["Guardrails\nCompliance"]
-            NM["Nova Micro\nValidador"]
-            CH["Claude Haiku\nNegociador"]
-            NL["Nova Lite\nRegistrador"]
-        end
-
-        DDB[("DynamoDB\nMetadata + TTL")]
-        S3H[("S3\nHistorial chats")]
-        S3C[("S3\nCSV Campañas")]
-        APC["AppConfig\nReglas por país"]
-        SM["Secrets Manager"]
-        EB["EventBridge\nFollow-ups"]
-        SF["Step Functions\nCampañas outbound"]
-        CW["CloudWatch\nDashboard"]
-    end
-
-    subgraph Core ["On-Premise LLA"]
-        Billing[("Billing API\nSolo lectura")]
-        CRM[("CRM API\nEscritura limitada")]
-    end
-
-    Meta --> WAF --> APIGW --> SQS --> Agent
-    Agent <--> Bedrock
-    Agent <--> DDB & S3H & APC & SM
-    Agent --> Billing & CRM & EB & CW
-    S3C --> SF --> SQS
-        </div>
+      <div class="bg-white rounded-xl border border-gray-200 p-4">
+        <img src="arquitectura_aws.png" alt="Diagrama de Arquitectura AWS — Proyecto Ágil" class="arch-img" />
       </div>
 
       <div class="mt-8 grid md:grid-cols-2 gap-4">
@@ -599,8 +557,6 @@ def registrar_pago_inmediato(telefono, monto_usd):
   </footer>
 
   <script>
-    mermaid.initialize({ startOnLoad: true, theme: 'default', securityLevel: 'loose' });
-
     // Highlight active nav link on scroll
     const sections = document.querySelectorAll('section[id]');
     const navLinks = document.querySelectorAll('.nav-link');

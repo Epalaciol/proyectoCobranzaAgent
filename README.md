@@ -16,54 +16,7 @@ Este repositorio contiene:
 
 ## Arquitectura del Sistema (Producción AWS)
 
-```mermaid
-flowchart TD
-    User([Cliente en WhatsApp]) <-->|Meta API| Meta[Meta WhatsApp Cloud API]
-
-    subgraph AWS Cloud [AWS Cloud — Región LLA]
-        WAF[AWS WAF]
-        APIGW[Amazon API Gateway\nHTTP API]
-        SQS[Amazon SQS FIFO\nIngesta]
-
-        subgraph AgentCore [Lambda: Agente AI Orchestrator]
-            SigVal[1. Validar Firma Meta]
-            AgentLogic[2. Orquestador ReAct\nTools integradas]
-        end
-
-        subgraph BedrockLayer [Amazon Bedrock]
-            Guardrails[Bedrock Guardrails\nCompliance automático]
-            ModelMicro[Nova Micro — Validador]
-            ModelHaiku[Claude 3.5 Haiku — Negociador]
-            ModelLite[Nova Lite — Registrador]
-        end
-
-        DDBSession[(DynamoDB\nMetadata + TTL)]
-        S3History[(S3\nHistorial Conversaciones)]
-        S3Campaigns[(S3\nArchivos de Campaña CSV)]
-        AppConfig[AWS AppConfig\nReglas por País]
-        Secrets[AWS Secrets Manager]
-        EventBridge[EventBridge Scheduler\nFollow-ups]
-        StepFn[Step Functions Express\nCampañas Outbound]
-        CloudWatch[CloudWatch\nDashboard + Alertas]
-    end
-
-    subgraph Core LLA [On-Premise / Core LLA]
-        BillingAPI[(Billing API\nSolo lectura)]
-        CRMAPI[(CRM API\nEscritura limitada)]
-    end
-
-    Meta --> WAF --> APIGW --> SQS --> AgentCore
-    AgentCore <--> BedrockLayer
-    AgentCore <--> DDBSession
-    AgentCore <--> S3History
-    AgentCore <--> AppConfig
-    AgentCore <--> Secrets
-    AgentCore --> BillingAPI
-    AgentCore --> CRMAPI
-    AgentCore --> EventBridge
-    AgentCore --> CloudWatch
-    S3Campaigns --> StepFn --> SQS
-```
+![Arquitectura AWS](docs/arquitectura_aws.png)
 
 **Decisiones clave:** HTTP API en lugar de REST API (70% más barato). Sin Lambda Authorizer separado — la firma de Meta se valida dentro del Agent Lambda. Sin Tool Lambdas intermedias — el Agent Lambda llama directamente a Billing y CRM APIs con IAM Least Privilege. Modelos distintos por agente (Nova Micro para tareas simples, Haiku para negociación compleja). Bedrock Guardrails reemplaza la segunda invocación LLM del Supervisor. Historial en S3 (sin límite 400KB) con metadata en DynamoDB. Ver justificación completa en [`doc/arquitectura_aws.md`](doc/arquitectura_aws.md).
 

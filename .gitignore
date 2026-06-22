@@ -20,5 +20,8 @@ __pycache__/
 # Documento confidencial del assessment (material propietario de LLA)
 doc/lla_candidato_assessment.pdf
 
+# Script de generación del diagrama (solo para uso local)
+generate_diagram.py
+
 # Logs
 *.log
