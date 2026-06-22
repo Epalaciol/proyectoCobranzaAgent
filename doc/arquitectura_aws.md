@@ -1,290 +1,259 @@
-# Proyecto Ágil: Inteligencia Artificial al Servicio de la Gestión de Clientes
+# Diseño Técnico — Sistema Multi-Agente de Cobranza
 
-**Candidato**: Esteban (AI Developer)
-**Fecha**: Junio 2026
-**Objetivo**: Diseñar y construir un sistema de Agentes de IA para la gestión y cobranza de clientes a través de WhatsApp, utilizando infraestructura 100% en AWS.
+**Candidato**: Esteban (AI Developer)  
+**Fecha**: Junio 2026  
+**Documento ejecutivo**: [`docs/index.html`](../docs/index.html)
+
+Este documento es la referencia técnica de implementación. La narrativa de negocio, métricas visuales, flujos de escalamiento y visión futura se encuentran en `docs/index.html`.
 
 ---
 
 ## 0. Supuestos Declarados
 
-El assessment indica explícitamente que los supuestos son parte de la evaluación. Estos son los supuestos de diseño tomados:
+| Supuesto | Impacto en diseño | Plan alternativo |
+|---|---|---|
+| Billing API accesible desde VPC vía REST/gRPC | El Agent Lambda llama directamente a la API | Integración batch vía S3 + Glue; saldo con latencia de 24h |
+| CRM con escritura vía API REST o SDK | Registro automático de promesas en tiempo real | Cola SQS + worker batch que escribe vía SFTP/archivo |
+| Meta Business API habilitada para número LLA | Canal WhatsApp operativo | Proceso no técnico — aprobación Meta puede tomar semanas |
+| Historial de promesas incumplidas en CRM | Perfil de riesgo usa 3 señales desde el inicio | Primera campaña usa solo días de mora y monto; perfil aprende |
+| Volumen de morosos simultáneos < 100,000 | SQS FIFO a 300 TPS es suficiente | Migrar a Kinesis Data Streams para >1M simultáneos |
+| Consentimiento de contacto incluido en contrato | Permite contacto outbound sin opt-in adicional | Campaña de opt-in previa al lanzamiento |
+| Latencia Bedrock (Claude 3.5 Haiku) < 3s | Margen para lograr p95 < 5s incluyendo tools | Circuit breaker con mensaje de "procesando" + respuesta asíncrona |
+| Reglas de negocio cambian semanalmente, no en tiempo real | AppConfig con caché de 60s es adecuado | Reducir TTL a 5s si se requiere actualización más frecuente |
 
-| Supuesto | Impacto en el diseño |
-|---|---|
-| LLA tiene una API interna de billing con endpoint REST | El Agent Lambda llama directamente a esta API. Si fuera batch/file, el patrón cambiaría a S3 + Glue |
-| El CRM soporta escritura vía API REST o SDK | Requerido para registrar promesas sin intervención manual |
-| Meta Business API está habilitada para el número de LLA | Prerequisito de negocio — requiere aprobación de Meta, proceso que puede tomar semanas |
-| El volumen de morosos activos simultáneos es < 100,000 | SQS FIFO a 300 TPS maneja este volumen. Para >1M se evaluaría Kinesis Data Streams |
-| Los clientes dieron consentimiento de contacto en su contrato de servicio | Permite el contacto outbound por WhatsApp sin opt-in adicional. Para no-clientes se requiere opt-in explícito |
-| Latencia de Bedrock (Claude 3.5 Haiku) < 3s por invocación | Deja margen para lograr la meta de p95 < 5s incluyendo tools |
-| Las reglas de negocio por país cambian semanalmente, no por segundo | Justifica AppConfig con caché de 60s en lugar de lecturas en caliente a DynamoDB |
-| Las APIs de Billing y CRM son accesibles desde la VPC de AWS (o vía PrivateLink) | Permite que el Agent Lambda las invoque directamente sin Tool Lambdas intermedias |
+**Nota sobre bases de datos de LLA:** Este diseño no asume tecnología específica (PostgreSQL, Oracle, Cassandra, etc.) para los sistemas core de LLA. La integración es siempre vía API — la tecnología subyacente del sistema de facturación o CRM es irrelevante mientras la API sea accesible desde la VPC.
 
 ---
 
-## 1. Diseño de Arquitectura AWS
+## 1. Arquitectura AWS
 
-La arquitectura ha sido diseñada con un enfoque **100% Serverless** para asegurar alta disponibilidad, absorber picos de tráfico (comunes en campañas de cobranza) y escalar dinámicamente a múltiples países — sin pagar por infraestructura inactiva.
+### 1.1 Componentes y justificación
 
-### 1.1 Diagrama de Componentes
+#### Ingesta
 
-```mermaid
-flowchart TD
-    User([Cliente en WhatsApp]) <-->|Meta API| Meta[Meta WhatsApp Cloud API]
+**API Gateway HTTP API** (no REST API)  
+WhatsApp exige HTTP 200 en <5 segundos o reintenta. HTTP API cubre este caso y cuesta 70% menos que REST API ($1.00 vs $3.50/millón requests). Las características avanzadas de REST API (caching, usage plans) no se necesitan para un webhook receiver.
 
-    subgraph AWS Cloud [AWS Cloud — Región LLA]
-        WAF[AWS WAF]
-        APIGW[Amazon API Gateway\nHTTP API]
-        SQS[Amazon SQS FIFO\nIngesta]
+**Amazon SQS FIFO**  
+Desacopla recepción de procesamiento. El 200 va a Meta en milisegundos; el LLM toma 2–5 segundos. FIFO garantiza orden por cliente (`MessageGroupId = NumeroTelefono`), evitando race conditions cuando el cliente envía dos mensajes en sucesión rápida. Capacidad: 300 TPS.
 
-        subgraph AgentCore [Lambda: Agente AI Orchestrator]
-            SigValidation[1. Validar Firma Meta\nx-hub-signature-256]
-            AgentLogic[2. Orquestador ReAct\nTools integradas]
-        end
+**Sin Lambda Authorizer separado**  
+La firma Meta (`x-hub-signature-256`) se valida dentro del Agent Lambda tras leer de SQS. Elimina un hop de red y un cold start adicional en el path crítico. Si la firma es inválida, el mensaje se descarta silenciosamente — Meta ya recibió su 200.
 
-        subgraph BedrockLayer [Amazon Bedrock]
-            Guardrails[Bedrock Guardrails\nCompliance automático]
-            ModelMicro[Nova Micro\nValidador + Supervisor]
-            ModelHaiku[Claude 3.5 Haiku\nNegociador]
-            ModelLite[Nova Lite\nRegistrador]
-        end
+#### Procesamiento
 
-        DDBSession[(DynamoDB\nMetadata de Sesión + TTL)]
-        S3History[(S3\nHistorial de Conversaciones)]
-        S3Campaigns[(S3\nArchivos de Campaña CSV)]
-        AppConfig[AWS AppConfig\nReglas por País]
-        Secrets[AWS Secrets Manager\nTokens y Credenciales]
-        EventBridge[EventBridge Scheduler\nFollow-ups Automáticos]
-        StepFn[Step Functions Express\nCampañas Outbound]
-        CloudWatch[CloudWatch\nDashboard + Alertas]
-        XRay[AWS X-Ray\nTracing Distribuido]
-    end
+**AWS Lambda — ¿Punto único de falla?**  
+No. Lambda tiene alta disponibilidad nativa: múltiples zonas de disponibilidad, escalado horizontal a miles de instancias, SLA de 99.95%. Los riesgos reales son:
+- **Bug en código** → mitigado con DLQ que captura fallos para análisis y reproceso
+- **Timeout** → Circuit breaker envía mensaje de fallback al cliente antes de expirar
+- **Cold start** → Provisioned Concurrency configurable durante horas de campaña
 
-    subgraph Core LLA [On-Premise / Core LLA]
-        BillingAPI[(Billing API\nSolo lectura)]
-        CRMAPI[(CRM API\nEscritura limitada)]
-    end
+Cada invocación procesa exactamente un turno (no toda la sesión), manteniéndose dentro del límite de 15 minutos de Lambda.
 
-    Meta --> WAF --> APIGW --> SQS --> AgentCore
-    AgentCore <--> BedrockLayer
-    AgentCore <--> DDBSession
-    AgentCore <--> S3History
-    AgentCore <--> AppConfig
-    AgentCore <--> Secrets
-    AgentCore --> BillingAPI
-    AgentCore --> CRMAPI
-    AgentCore --> EventBridge
-    AgentCore --> CloudWatch
-    AgentCore --> XRay
-    S3Campaigns --> StepFn --> SQS
-```
+**Sin Tool Lambdas intermedias**  
+El Agent Lambda llama directamente a Billing y CRM APIs con IAM Least Privilege. Elimina 200–500ms de latencia y un cold start adicional por herramienta invocada. Solo aplica si las APIs son accesibles desde la VPC (ver supuesto).
 
-### 1.2 Justificación de Decisiones Tecnológicas
+#### Modelos de IA — Selección por tarea
 
-#### Ingesta y Desacoplamiento
+| Agente | Tarea | Modelo | Razón técnica | Costo relativo |
+|---|---|---|---|---|
+| Validador | Clasificación binaria (sí/no/no soy titular) | Amazon Nova Micro | Tarea simple; LLM de gran tamaño es overkill | ~$0.035/M tokens |
+| Negociador | Razonamiento multi-paso, detección de tono, persuasión, cálculo de fechas | Claude 3.5 Haiku | Mayor capacidad de razonamiento de la familia. Detecta hostilidad y evasión con contexto | ~$0.80/M tokens |
+| Registrador | Extracción de entidades estructuradas (monto, fecha) de historial corto | Amazon Nova Lite | Supera a Micro en extracción con contexto; 5× más barato que Haiku | ~$0.06/M tokens |
+| Cierre | Texto formulaico de confirmación | Amazon Nova Lite | No requiere creatividad; texto basado en plantilla | ~$0.06/M tokens |
+| Supervisor | Filtrado de compliance | Bedrock Guardrails | No es LLM call — filtro nativo integrado en la invocación. 100× más barato | ~$0.15/1000 unidades |
 
-**Amazon API Gateway HTTP API** (no REST API)
-La API de WhatsApp envía webhooks que deben responderse con HTTP 200 en menos de 5 segundos o Meta asume fallo y reintenta. HTTP API cubre completamente este caso y cuesta **70% menos** que REST API ($1.00 vs $3.50 por millón de requests). REST API tiene características avanzadas (caching, usage plans, request validation) que no se necesitan para un webhook receiver.
-
-**Amazon SQS FIFO — Ingesta**
-Desacopla la recepción del procesamiento: el HTTP 200 va a Meta en milisegundos, mientras el LLM toma 2-5 segundos. FIFO garantiza que los mensajes de un mismo cliente se procesen en orden cronológico (`MessageGroupId = NumeroTelefono`), evitando race conditions cuando un cliente envía dos mensajes en rápida sucesión. A 300 TPS de capacidad, maneja cómodamente el volumen de LLA.
-
-**Sin Lambda Authorizer**
-La validación de la firma de Meta (`x-hub-signature-256`) se realiza *dentro* del Agent Lambda, después de leer de SQS — no como un Authorizer separado. Esto elimina un hop de red y un posible cold start adicional en el path crítico. Si la firma es inválida, el mensaje se descarta sin procesar; Meta no lo sabe porque ya recibió su HTTP 200.
-
-#### Procesamiento y IA
-
-**AWS Lambda — Agent Orchestrator**
-Escala de cero a miles de instancias instantáneamente. Cada invocación procesa exactamente un turno de conversación (no toda la sesión), manteniéndose bien dentro del límite de 15 minutos. Las tools (consultar saldo, registrar acuerdo) se ejecutan como llamadas directas a las APIs de Billing y CRM desde dentro del mismo Lambda — sin Tool Lambdas intermedias, eliminando 200-500ms de latencia por herramienta invocada.
-
-**Amazon Bedrock — Multi-modelo por agente**
-Bedrock permite consumir múltiples modelos de forma privada — ningún dato de cliente de LLA es usado para entrenar modelos públicos. La clave es seleccionar el modelo correcto para cada tarea:
-
-| Agente | Tarea | Modelo | Razón |
-|---|---|---|---|
-| Validador | Detectar "sí / no / no soy el titular" | Amazon Nova Micro | Tarea simple de clasificación. 10x más barato que Haiku |
-| Negociador | Razonamiento multi-paso, persuasión, cálculo de fechas | Claude 3.5 Haiku | Requiere la mayor capacidad. Balance óptimo costo/calidad |
-| Registrador | Extraer teléfono + monto + fecha del historial | Amazon Nova Lite | Extracción estructurada. 5x más barato que Haiku |
-| Supervisor | Decisión binaria: APROBADO / RECHAZADO | Bedrock Guardrails | No es un LLM call — es un filtro nativo integrado en la invocación |
-
-**Bedrock Guardrails — Reemplaza al Supervisor LLM**
-En lugar de una segunda invocación LLM completa para auditar cada respuesta, Bedrock Guardrails aplica filtros configurables *dentro* de la misma llamada al modelo: denied topics ("no prometer condonación total de deuda"), word filters (lenguaje amenazante), PII detection (no exponer datos de otros clientes) y grounding checks. Costo: $0.15 por 1,000 unidades de texto — órdenes de magnitud más barato que un LLM call completo. Si Guardrails bloquea una respuesta, se envía automáticamente un mensaje de fallback configurado.
+**Modelos descartados:**
+- GPT-4o Mini: capacidad similar a Haiku pero requiere salir de AWS (privacidad de datos, latencia de red, vendor adicional)
+- Claude 3.5 Sonnet para todos los agentes: 3× más caro que Haiku con mejora marginal para tareas de cobranza estructuradas
+- Reglas deterministas sin LLM para el Validador: descartado porque el lenguaje natural de confirmación de identidad es demasiado variado
 
 #### Estado y Memoria
 
-**Amazon DynamoDB — Metadata de Sesión (con TTL)**
-Almacenamiento de baja latencia para el *estado* de la conversación: número de teléfono, fase actual (VALIDADOR/NEGOCIADOR/REGISTRADOR/CERRAR), timestamp de última interacción, y la clave S3 del historial. TTL de 48 horas para auto-expirar sesiones cerradas sin costo manual. Partition key: `COUNTRY_ID#PHONE_NUMBER` para escalabilidad multi-país.
+**DynamoDB — Metadata de sesión**  
+Estado de la sesión: teléfono, fase actual, timestamp, clave S3 del historial, perfil de riesgo calculado. TTL de 48h para auto-expirar sesiones cerradas. Partition key: `COUNTRY_ID#PHONE_NUMBER` para escalabilidad multi-país.
 
-**Amazon S3 — Historial de Conversaciones**
-El historial completo de mensajes (incluyendo tool results) se almacena en S3, no en DynamoDB. DynamoDB tiene un límite de 400KB por item — una conversación larga con múltiples tool calls puede superarlo. S3 no tiene ese límite, cuesta ~3x menos por GB de almacenamiento, y el historial queda disponible para análisis con Athena. Estructura de keys: `conversations/PA/+50712345678/2026-06-22.json`. S3 Lifecycle Policy: mover a Glacier después de 90 días para auditoría regulatoria.
+**S3 — Historial de conversaciones**  
+DynamoDB tiene límite de 400KB/item. Una conversación de 35 turnos con tool calls puede superar ese límite. S3 no tiene límite, cuesta 3× menos por GB, y permite análisis con Athena. Lifecycle Policy: 90 días en S3 Standard (hot), luego S3 Glacier para auditoría regulatoria.
 
-#### Configuración y Seguridad
+Key structure: `conversations/{COUNTRY}/{PHONE}/{DATE}.json`
 
-**AWS AppConfig — Reglas por País**
-Permite que el equipo comercial modifique reglas de negocio (montos mínimos de negociación, tonos de comunicación, límites de cuotas por país) sin redesplegar código. El SDK de AppConfig cachea la configuración en memoria del Lambda con TTL configurable (60-300s), minimizando las llamadas a la API y su costo. Ventaja sobre SSM Parameter Store: soporta deployment strategies (canary rollout) y rollback automático si una nueva configuración rompe métricas.
+#### Campaña Outbound
 
-**AWS Secrets Manager**
-Almacena de forma segura los tokens de la Meta API, credenciales del CRM y claves de las APIs de Billing. Rotación automática configurable. Costo de $0.40/secret/mes es negligible frente al riesgo de exponer credenciales.
+**Step Functions Express — ¿Por qué?**  
+Las campañas outbound pueden tener 100,000 clientes. Step Functions Express orquesta el envío con rate limiting (respetar límites de Meta API), reintentos configurables y manejo de errores. Express Workflows cuestan $1.00/millón de transiciones — 40× más barato que Standard, diseñado para alta frecuencia y corta duración.
 
-**IAM Least Privilege — Sin Tool Lambdas**
-El Agent Lambda tiene un execution role con políticas granulares:
-- `billing:Read` — solo GET a endpoints específicos del Billing API
-- `crm:WritePromise`, `crm:WriteEscalation` — solo los endpoints necesarios del CRM
-- `dynamodb:GetItem`, `dynamodb:PutItem` — solo la tabla de sesiones
-- `s3:GetObject`, `s3:PutObject` — solo el bucket de conversaciones
+**EventBridge Scheduler — Follow-ups**  
+Cuando el agente espera respuesta, programa un evento para X horas. Al dispararse, una Lambda verifica `LastInteractionTime` en DynamoDB. Si el cliente no respondió, reactiva el agente con historial completo e instrucción de re-acercamiento contextual. Costo: $1.00/millón invocaciones.
 
-#### Campaña Outbound y Follow-ups
+#### WAF — ¿Es necesario?
 
-**S3 + Step Functions Express — Campañas**
-El área de cobranza carga un CSV de morosos a S3, lo que dispara un Step Functions Express Workflow que: lee el archivo, segmenta por país y nivel de deuda, y escribe mensajes iniciales en SQS con rate limiting para no superar los límites de Meta. Express Workflows cuestan $1.00/millón de transiciones — 40x más barato que Standard Workflows, y están diseñados para exactamente este patrón de alta frecuencia y corta duración.
-
-**EventBridge Scheduler — Follow-ups Inteligentes**
-Cuando el agente envía un mensaje esperando respuesta, programa un evento para X horas después. Al dispararse, una Lambda verifica en DynamoDB si el cliente respondió. Si no, reactiva el agente con el historial completo y una instrucción de re-acercamiento. Costo: $1.00/millón de invocaciones — prácticamente gratis para el volumen de LLA.
-
-#### Observabilidad
-
-**CloudWatch + X-Ray**
-Las Lambdas emiten métricas custom a CloudWatch: duración de invocación de Bedrock, resultado del Guardrail (aprobado/rechazado), fase de conversación alcanzada. X-Ray provee tracing distribuido para identificar cuellos de botella en el path Lambda → Bedrock → API externa. Dashboard central con las métricas de negocio y técnicas.
+Sí. Un script malicioso enviando 10,000 mensajes genera ~$20 en Bedrock sin WAF. Con WAF: $0.01/millón de requests inspeccionados. ROI positivo ante el primer ataque. Configura rate limiting por IP y por número de teléfono (segunda capa en DynamoDB).
 
 ---
 
-## 2. Estrategia y Reglas de Negocio
+## 2. Selección de Modelos de Agentes
 
-### ¿Cómo llega el agente a saber con quién hablar y qué decirle?
+### Perfil de riesgo del cliente
 
-El agente es "despertado" de dos maneras:
+El perfil se calcula al inicio de cada sesión con datos del Billing API y CRM ya disponibles — no requiere base de datos adicional ni proceso de batch:
 
-1. **Inbound (Recepción)**: El cliente escribe por WhatsApp. El sistema identifica su número, consulta DynamoDB para ver si hay una sesión activa, recupera el historial de S3 (si existe), y llama al Billing API para obtener el estado de deuda actual.
-2. **Outbound (Campaña)**: El área de cobranza carga un CSV de morosos a S3, lo que dispara Step Functions Express para inyectar los mensajes iniciales en SQS y abrir la conversación — con rate limiting para respetar los límites de Meta.
+```python
+def calcular_perfil_riesgo(billing_data: dict, crm_data: dict) -> str:
+    dias_mora = billing_data["dias_vencido"]
+    monto = billing_data["saldo_vencido"]
+    promesas_incumplidas = crm_data.get("promesas_incumplidas", 0)  # default 0 si no existe
 
-### ¿Cómo funciona el agente internamente?
-
-El agente actúa como un orquestador siguiendo el patrón **ReAct** (Reason & Act):
-
-1. Lee el mensaje y el historial completo de S3
-2. Razona con Bedrock sobre la intención del cliente
-3. Decide si invoca tools (Billing API, CRM API) directamente
-4. Formula una respuesta empática y persuasiva
-5. La respuesta pasa por Bedrock Guardrails antes de enviarse
-
-**Arquitectura Multi-Agente Especializada:**
-
-```
-Mensaje entrante
-      │
-      ▼
-[Agente 1: Validador — Nova Micro]
-Confirma identidad del titular. Sin acceso a datos de deuda.
-      │ (identidad confirmada)
-      ▼
-[Agente 2: Negociador — Claude 3.5 Haiku]
-Escalada: pago total → 2 cuotas → 3 cuotas → promesa → canales alternativos
-Tools directas: Billing API (lectura), CRM API (registro pago inmediato), EscalarHumano
-      │ (acuerdo alcanzado)
-      ▼
-[Agente 3: Registrador — Nova Lite]
-Extrae monto + fecha del historial y formaliza en CRM API
-      │
-      ▼
-[Agente 4: Cierre — Nova Lite]
-Confirma, celebra y cierra la sesión
-      │
-      ▼
-[Bedrock Guardrails] ← Filtra TODA respuesta antes de enviarla al cliente.
-Bloquea: condonación total, lenguaje amenazante, datos de terceros,
-referencias legales sin base. Fallback configurable si bloquea.
+    if dias_mora <= 15 and monto < 50 and promesas_incumplidas == 0:
+        return "BAJO"
+    elif dias_mora <= 60 and monto <= 200 and promesas_incumplidas <= 1:
+        return "MEDIO"
+    else:
+        return "ALTO"
 ```
 
-**Segmentación de tono por riesgo:**
-- **Bajo (≤15 días):** Tono suave. "Un pequeño recordatorio"
-- **Medio (16–60 días):** Firme pero amable. "Es importante regularizarlo pronto"
-- **Alto (>60 días):** Urgencia real. "Evitemos la suspensión del servicio"
-
-### Re-acercamiento Inteligente (Follow-ups)
-
-Cuando el agente envía una propuesta y el cliente no responde ("deja en visto"), EventBridge Scheduler programa una Lambda para X horas después. La Lambda verifica `LastInteractionTime` en DynamoDB. Si el cliente sigue sin responder, el agente se reactiva con el historial completo y una instrucción de insistencia contextual — no empieza desde cero, continúa la conversación con fluidez.
-
-### ¿Cómo se integra con los sistemas existentes?
-
-El Agent Lambda llama directamente a las APIs de LLA con roles IAM de mínimo privilegio:
-- **Billing API**: Solo lectura. El agente puede ver el saldo pero nunca modificarlo.
-- **CRM API**: Escritura limitada a endpoints específicos: registrar promesa de pago, abrir ticket de escalamiento.
-
-El orquestador nunca tiene acceso directo a las bases de datos — siempre pasa por las APIs de negocio, que tienen su propia capa de validación.
-
-### ¿Cómo se gestiona y controla el sistema?
-
-- **Reglas de negocio**: El equipo comercial las modifica en AppConfig sin tocar código ni hacer deploys. Ejemplo: "En Panamá, si deuda > $200, ofrecer hasta 3 cuotas. En Jamaica, máximo 2 cuotas."
-- **Campañas outbound**: El área de cobranza sube un CSV a S3. El sistema lo procesa automáticamente, controla el rate limiting y genera los primeros mensajes.
-- **Guardrails**: El equipo de cumplimiento configura los filtros directamente en la consola de Bedrock, sin tocar el código del agente.
+**Actualización dinámica durante la sesión:** El Negociador detecta señales en la respuesta del cliente (hostilidad, evasión, cooperación) y las registra en CRM al finalizar la sesión para enriquecer el perfil en futuras interacciones.
 
 ---
 
-## 3. Riesgos, Mitigaciones y Métricas
+## 3. Flujo de Escalamiento
 
-### ¿Qué puede salir mal y cómo lo mitigamos?
+### Árbol de decisión del Negociador
 
-| Riesgo | Probabilidad | Impacto | Mitigación |
-|---|---|---|---|
-| **Alucinación**: el agente promete un descuento no autorizado | Media | Alto | Bedrock Guardrails bloquea la respuesta. La operación de descuento solo existe en código de la Tool — el LLM no puede inventar montos |
-| **Saturación humana**: escalamientos excesivos colapsan el call center | Media | Alto | AppConfig define un límite dinámico de escalamientos simultáneos. Si se supera, el agente ofrece contacto en 24h y abre ticket asíncrono |
-| **Ataque / spam**: un bot envía miles de mensajes generando costos en Bedrock | Baja | Alto | WAF en la entrada + rate limit por número en DynamoDB (máx. N invocaciones de Bedrock por día por usuario) |
-| **Latencia excesiva**: Bedrock tarda > 5s y el cliente ve al agente "tardando" | Baja | Medio | Indicador de "escribiendo..." via WhatsApp Typing Indicator. Circuit breaker en la Lambda con mensaje de fallback |
-| **Conversación sin contexto**: Lambda nueva sin historial previo | Media | Medio | S3 siempre tiene el historial. La Lambda lo carga al inicio de cada invocación |
-| **Error en API de Billing/CRM**: la herramienta falla | Baja | Medio | Try/catch con retry exponencial (2 intentos). Si falla, el agente informa al cliente y sugiere el portal web |
-| **Cambio de reglas en AppConfig con error**: nueva configuración rompe el agente | Baja | Alto | AppConfig rollback automático si las métricas de CloudWatch superan umbrales configurados (canary deployment) |
+```
+Inicio de negociación
+│
+├── ① Ofrecer pago total
+│   ├── Acepta → generar_link_pago() → Registrador → Cierre
+│   └── Rechaza → continuar
+│
+├── ② Ofrecer plan 2 cuotas
+│   ├── Acepta → registrar_promesa_pago() → Cierre
+│   └── Rechaza → continuar
+│
+├── ③ Ofrecer plan 3 cuotas (si perfil MEDIO o ALTO)
+│   ├── Acepta → registrar_promesa_pago() → Cierre
+│   └── Rechaza → continuar
+│
+├── ④ Proponer promesa de pago con fecha libre
+│   ├── Acepta fecha → registrar y agendar follow-up
+│   └── Evade o no se compromete → continuar
+│
+├── ⑤ Ofrecer canal alternativo (portal web, sucursal)
+│   ├── Acepta → cierre con follow-up
+│   └── Continúa evadiendo → escalar
+│
+└── ⑥ escalar_a_humano(motivo="sin_acuerdo")
+    └── Entrega historial completo al asesor
+```
 
-### ¿Cómo sabemos si el sistema está funcionando? (Métricas)
+### Escalamientos inmediatos (sin árbol)
 
-**Métricas de Negocio** — para el dashboard del área comercial:
-
-| Métrica | Definición | Meta inicial |
+| Trigger | Acción | Actualiza perfil CRM |
 |---|---|---|
-| **Tasa de Recuperación ($)** | Monto de deuda cobrada / monto total gestionado por el agente | > 30% en 30 días |
-| **Resolución en Primer Contacto (FCR)** | Conversaciones que terminan en promesa sin intervención humana | > 60% |
-| **Tasa de Escalamiento** | Conversaciones transferidas a humano / total | < 20% |
-| **Tasa de Promesas Cumplidas** | Promesas registradas que se pagan en la fecha acordada | > 70% |
-| **Tasa de Opt-out (STOP)** | Usuarios que solicitan no ser contactados | < 5% |
+| Lenguaje hostil o insultos | `escalar_a_humano(motivo="cliente_agresivo")` | Sí — flag `contacto_hostil: true` |
+| "Quiero hablar con una persona / agente / ejecutivo" | `escalar_a_humano(motivo="solicitud_cliente")` | No |
+| Dispute de deuda ("yo ya pagué") | `escalar_a_humano(motivo="disputa_facturacion")` | Sí — flag `disputa_pendiente: true` |
+| Turno 30 sin acuerdo | Ofrecer proactivamente canal humano | No |
+| Turno 35 (límite) sin acuerdo | `escalar_a_humano(motivo="limite_sesion")` | Sí — flag `sesion_agotada: true` |
 
-**Métricas Técnicas** — para el dashboard de operaciones:
+**Sobre el límite de 35 turnos:** El límite por defecto es 35 (ajustado para el cliente latinoamericano que tiende a la evasión y el diálogo extenso). Es configurable en AppConfig sin redesplegar código. En el turno 30, el agente ofrece proactivamente el canal humano. Si el cliente prefiere continuar y hay progreso activo en la conversación, un operador puede extender el límite desde AppConfig en tiempo real.
 
-| Métrica | Meta |
+### Gestión de opt-out en español
+
+El sistema reconoce variantes en español además del estándar inglés "STOP":
+
+**Opt-out permanente** (no contactar en ninguna campaña futura del mismo canal):
+- STOP, ALTO, DETENER, PARA, NO ME CONTACTES, NO QUIERO QUE ME CONTACTEN, BASTA
+
+**No interesado ahora** (programar follow-up):
+- NO AHORA, DESPUÉS, MÁS TARDE, MAÑANA, LLAMAME DESPUÉS, EN OTRO MOMENTO
+
+**Solicitud de humano**:
+- AGENTE, PERSONA, EJECUTIVO, HABLAR CON ALGUIEN, QUIERO UN HUMANO, ASESOR
+
+La detección es case-insensitive y tolera variantes con/sin acento.
+
+---
+
+## 4. IAM Least Privilege
+
+```
+Agent Lambda Role:
+  ✓ bedrock:InvokeModel (modelos específicos en us-east-1)
+  ✓ bedrock:ApplyGuardrail (guardrail ID específico)
+  ✓ dynamodb:GetItem / PutItem (tabla sesiones únicamente)
+  ✓ s3:GetObject / s3:PutObject (bucket chats únicamente)
+  ✓ secretsmanager:GetSecretValue (secrets específicos por ARN)
+  ✗ dynamodb:Scan / DeleteItem / Query sin condición
+  ✗ s3:DeleteObject / s3:ListBucket completo
+  ✗ bedrock:* (wildcard — no permitido)
+
+Step Functions Role:
+  ✓ s3:GetObject (bucket campañas)
+  ✓ sqs:SendMessage (cola ingesta)
+  ✗ bedrock:* (no invoca modelos)
+  ✗ crm:* (no escribe CRM)
+```
+
+---
+
+## 5. Observabilidad
+
+**CloudWatch + X-Ray:** Tracing distribuido de Lambda → Bedrock → APIs externas. Dashboard con métricas custom.
+
+**Datadog (opcional):** Para equipos con Datadog existente, la extensión Lambda permite emitir métricas sin modificar permisos IAM (vía CloudWatch Logs).
+
+**Dead Letter Queue (DLQ):** Mensajes que fallan 3 veces llegan a DLQ. Una alarma CloudWatch se activa ante cualquier mensaje en DLQ — señal de bug crítico en el código.
+
+**Métricas técnicas clave:**
+
+| Métrica | Meta | Alarma si |
+|---|---|---|
+| `lla.agent.response.latency` p95 | < 5,000ms | > 6,000ms |
+| `lla.agent.response.latency` p99 | < 8,000ms | > 10,000ms |
+| `lla.agent.error.rate` | < 0.5% | > 1% |
+| `lla.agent.guardrail.blocked` | < 2% | > 5% en ventana 5min |
+| `lla.security.input.rejected` | baseline | spike > 2× baseline |
+| DLQ message count | 0 | > 0 en 5min |
+
+---
+
+## 6. Estimación de Costos
+
+### 10,000 conversaciones / mes
+
+| Servicio | Costo/mes |
 |---|---|
-| **Latencia p95** (mensaje enviado → respuesta recibida) | < 5 segundos |
-| **Latencia p99 de Bedrock** | < 8 segundos |
-| **Tasa de errores Lambda** | < 0.1% |
-| **Tasa de bloqueo de Guardrails** | Alerta si > 5% (indica prompt drift o ataque) |
-| **Mensajes en DLQ (Dead Letter Queue)** | Alerta si > 0 en 5 minutos |
+| API Gateway HTTP API | $0.05 |
+| SQS FIFO | $0.03 |
+| Lambda (orquestador) | $0.80 |
+| Bedrock Nova Micro (Validador) | $0.60 |
+| Bedrock Claude 3.5 Haiku (Negociador) | $4.00 |
+| Bedrock Nova Lite (Registrador + Cierre) | $1.00 |
+| Bedrock Guardrails | $3.75 |
+| DynamoDB on-demand | $0.50 |
+| S3 (historial + campañas) | $0.30 |
+| EventBridge + Step Functions | $0.01 |
+| Secrets Manager | $2.00 |
+| WAF + CloudWatch + X-Ray | $8.05 |
+| **TOTAL infraestructura** | **~$21/mes** |
 
----
+### Costo real ponderado (incluyendo escalamiento humano)
 
-## 4. Estimación de Costos
+Con 20% de escalamiento a asesor humano ($3.50/llamada):
 
-### Escenario: 10,000 conversaciones activas por mes
+| Canal | Volumen | Costo unitario | Total |
+|---|---|---|---|
+| Agente IA (80%) | 8,000 | $0.002 | $16 |
+| Asesor humano (20%) | 2,000 | $3.50 | $7,000 |
+| **Costo total mixto** | 10,000 | | **~$7,016/mes** |
+| Sin IA (baseline) | 10,000 | $3.50 | $35,000/mes |
+| **Ahorro real** | | | **~80%** |
 
-Supuestos: 5 turnos promedio por conversación, 3 invocaciones de Bedrock por turno (1 por agente), 1 tool call por turno.
+La comparación directa $0.002 vs $2-5 es válida solo para el 80% de conversaciones resueltas por IA. El número honesto es 80% de reducción de costo total, no 99.9%.
 
-| Servicio | Cálculo | Costo/mes |
-|---|---|---|
-| **SQS FIFO** | 50K mensajes × $0.50/millón | $0.03 |
-| **API Gateway HTTP API** | 50K requests × $1.00/millón | $0.05 |
-| **Lambda** (Agent Orchestrator) | 50K inv × 3s avg × 512MB → ~$0.80 | $0.80 |
-| **Bedrock Nova Micro** | 150K inv (Validador) × ~$0.10/millón tokens | $0.60 |
-| **Bedrock Claude 3.5 Haiku** | 50K inv (Negociador) × ~$0.80/millón tokens | $4.00 |
-| **Bedrock Nova Lite** | 100K inv (Registrador + Cierre) × ~$0.20/millón tokens | $1.00 |
-| **Bedrock Guardrails** | 50K respuestas × 500 tokens avg = 25M text units × $0.15/1000 | $3.75 |
-| **DynamoDB** | 10K sesiones × 2KB metadata × on-demand | $0.50 |
-| **S3** (historial + campañas) | 10K sesiones × 50KB avg + operaciones | $0.30 |
-| **EventBridge Scheduler** | 10K follow-ups × $1.00/millón | $0.01 |
-| **Secrets Manager** | 5 secrets × $0.40 | $2.00 |
-| **CloudWatch + X-Ray** | Logs + traces estimados | $3.00 |
-| **AWS WAF** | $5.00 base + $1.00/millón requests | $5.05 |
-| **TOTAL ESTIMADO** | | **~$21/mes** |
-
-### Escenario: 100,000 conversaciones activas por mes
-
-Escalando linealmente (los costos fijos como WAF y Secrets Manager se amortiza):
+### 100,000 conversaciones / mes
 
 | Componente | Costo/mes |
 |---|---|
@@ -292,15 +261,21 @@ Escalando linealmente (los costos fijos como WAF y Secrets Manager se amortiza):
 | Bedrock (todos los modelos + Guardrails) | ~$95 |
 | Almacenamiento y configuración | ~$15 |
 | Observabilidad | ~$10 |
-| **TOTAL ESTIMADO** | **~$205/mes** |
+| **TOTAL infraestructura** | **~$205/mes** |
 
-**Costo por conversación a escala: ~$0.002 USD** — menos de medio centavo por interacción completa con un cliente.
+Costo ponderado real (80/20 split): ~$70,000/mes vs $350,000 sin IA — 80% de ahorro.
 
-Para contexto: una llamada telefónica de cobranza de 5 minutos con un agente humano cuesta entre $2 y $5 USD en un call center de Panamá. El agente IA gestiona el mismo caso por $0.002 — **una reducción de 99.9% en costo por interacción**.
+### Optimizaciones de costo
 
-### Palancas de optimización si el costo crece
+1. **Bedrock Prompt Caching:** System prompts idénticos entre usuarios → 90% menos en tokens de entrada. Mayor impacto por costo.
+2. **Truncar historial:** Últimos 10 turnos en lugar del historial completo → reducción lineal en tokens.
+3. **Reducir tasa de escalamiento:** Pasar del 20% al 15% tiene mayor impacto económico que cualquier optimización de infraestructura ($3.50 × 500 conversaciones = $1,750/mes).
+4. **Provisioned Concurrency Lambda:** Solo durante horas de campaña — reduce cold starts sin pagar 24/7.
 
-1. **Acortar el historial enviado a Bedrock**: Enviar solo los últimos 10 turnos en lugar del historial completo reduce tokens de entrada y costo.
-2. **Cacheo de prompts con Bedrock Prompt Caching**: Si el system prompt es el mismo para todos los usuarios, AWS cachea los tokens de entrada y cobra 90% menos por ellos.
-3. **Lambda SnapStart**: Para Lambdas en Java, elimina cold starts. En Python (stack actual), no aplica — pero provisioned concurrency durante horas pico de campaña reduce latencia.
-4. **Spot instances para Step Functions**: Para el procesamiento de campañas en batch, no hay urgencia — se puede usar capacidad spot.
+---
+
+## 7. Visión Futura — Plataforma CX Multi-Agente
+
+Este sistema es el Módulo 1 de una plataforma de Customer Experience completa. La arquitectura de la plataforma completa y la hoja de ruta se describen en `docs/index.html` → sección "Visión Futura".
+
+El componente clave es un **CX Resolver** que recibe todos los mensajes entrantes del cliente y clasifica la intención para enrutar al agente especializado correcto (Cobranza, Ventas, Soporte Técnico, Operaciones). Todos los módulos comparten una capa de perfil unificado del cliente y Guardrails.
