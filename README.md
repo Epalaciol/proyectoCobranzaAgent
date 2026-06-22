@@ -1,20 +1,12 @@
 # Proyecto Ágil — Sistema Multi-Agente de Gestión de Clientes
 
-> **Liberty Latin America · AI Developer Technical Assessment · Junio 2026**
-
 [![Python 3.10+](https://img.shields.io/badge/Python-3.10+-blue?logo=python&logoColor=white)](https://python.org)
 [![Streamlit](https://img.shields.io/badge/Streamlit-1.x-FF4B4B?logo=streamlit&logoColor=white)](https://streamlit.io)
 [![LangChain](https://img.shields.io/badge/LangChain-0.3-1C3C3C?logo=chainlink)](https://langchain.com)
 [![Ollama](https://img.shields.io/badge/Ollama-Llama_3.1-000000?logo=ollama)](https://ollama.com)
 [![Tests](https://img.shields.io/badge/Tests-14_passing-brightgreen?logo=pytest)](tests/)
 
----
-
-## El Problema de Negocio
-
-Liberty Latin America opera en Panamá con una base masiva de suscriptores de internet de fibra, televisión y telefonía. El equipo de cobranza gestiona clientes morosos principalmente por llamada telefónica y correo electrónico — dos canales que no escalan y que tienen tasas de apertura del 20–30%.
-
-WhatsApp tiene una tasa de apertura superior al **90%** en Panamá. La solución está clara: necesitamos un sistema de Agentes de IA que gestione la recuperación de cartera vencida a través de WhatsApp, de forma empática, escalable y segura.
+Sistema de Agentes de IA para la gestión de cobranza de clientes a través de WhatsApp. Arquitectura serverless 100% en AWS con multi-agente especializado, Bedrock Guardrails y protección contra prompt injection.
 
 Este repositorio contiene:
 - **El diseño de arquitectura completo** para producción en AWS → [`doc/arquitectura_aws.md`](doc/arquitectura_aws.md)
@@ -218,28 +210,6 @@ streamlit run app.py
 ```
 
 Esto abre automáticamente `http://localhost:8501` en tu navegador.
-
----
-
-## ¿Cómo hacer la demo?
-
-1. En la **barra lateral izquierda**, selecciona un cliente del menú desplegable
-2. Verás la tarjeta del cliente con su deuda y perfil de riesgo
-3. Presiona **"▶ Iniciar conversación"** — el agente envía el primer mensaje
-4. Interactúa como si fueras el cliente
-5. Escribe **STOP** en cualquier momento para simular un opt-out
-
-### Flujos recomendados para la demo
-
-| Flujo | Cliente | Cómo probarlo |
-|---|---|---|
-| **Pago inmediato** | Ana Sánchez | Responde "Sí" → "Voy a pagar ahora" |
-| **Plan de cuotas** | Juan Pérez | Responde "Sí" → "No puedo pagar todo" → acepta cuotas |
-| **Escalamiento** | María Gómez | Responde con insultos o rechazo rotundo |
-| **Supervisor en acción** | Carlos Rodríguez | Pide que le condonen la deuda — observa en los logs cómo el Supervisor intercepta |
-| **No es el titular** | Cualquiera | Responde "No, soy su hijo/a" |
-
-> En la terminal donde corre Streamlit puedes ver los **logs del Supervisor** auditando cada respuesta en tiempo real.
 
 ---
 

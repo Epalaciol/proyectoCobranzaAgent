@@ -165,6 +165,17 @@ else:
                 chat_slot.markdown(_render_chat(), unsafe_allow_html=True)
                 st.rerun()
 
+            # Guardrail: validar input antes de tocar el LLM
+            turno_actual = len([m for m in st.session_state.messages if m["role"] == "user"])
+            es_valido, rechazo = multi_agent.validar_input(user_input, turno_actual)
+            if not es_valido:
+                st.session_state.messages.append({"role": "user", "text": user_input, "ts": _ts()})
+                st.session_state.messages.append({"role": "bot", "text": rechazo, "ts": _ts()})
+                if "tiempo máximo" in rechazo:
+                    st.session_state.chat_active = False
+                chat_slot.markdown(_render_chat(), unsafe_allow_html=True)
+                st.rerun()
+
             # 1. Agregar mensaje del usuario al estado
             st.session_state.messages.append({"role": "user", "text": user_input, "ts": _ts()})
             st.session_state.historial_langchain.append(HumanMessage(content=user_input))

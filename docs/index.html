@@ -1,0 +1,617 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Proyecto Ágil — Sistema Multi-Agente de Cobranza</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+  <script src="https://cdn.jsdelivr.net/npm/mermaid@10/dist/mermaid.min.js"></script>
+  <style>
+    html { scroll-behavior: smooth; }
+    .nav-link { transition: color 0.2s, border-color 0.2s; }
+    .nav-link:hover { color: #dc2626; border-color: #dc2626; }
+    .nav-link.active { color: #dc2626; border-bottom: 2px solid #dc2626; }
+    .section-card { transition: box-shadow 0.2s; }
+    .section-card:hover { box-shadow: 0 8px 30px rgba(0,0,0,0.08); }
+    .badge { display: inline-block; padding: 2px 10px; border-radius: 999px; font-size: 0.75rem; font-weight: 600; }
+    .tag-tech { background: #dbeafe; color: #1e40af; }
+    .tag-biz  { background: #dcfce7; color: #166534; }
+    .tag-legal{ background: #fef9c3; color: #854d0e; }
+    pre { background: #1e293b; color: #e2e8f0; border-radius: 8px; padding: 1.25rem; overflow-x: auto; font-size: 0.82rem; line-height: 1.6; }
+    code { font-family: 'Menlo', 'Monaco', monospace; }
+    .mermaid { display: flex; justify-content: center; }
+    .metric-card { border-left: 4px solid; }
+    .metric-tech { border-color: #3b82f6; background: #eff6ff; }
+    .metric-biz  { border-color: #22c55e; background: #f0fdf4; }
+    .metric-legal{ border-color: #f59e0b; background: #fffbeb; }
+    .pill { display: inline-block; border-radius: 6px; padding: 2px 8px; font-size: 0.72rem; font-weight: 700; margin-right: 4px; }
+  </style>
+</head>
+<body class="bg-gray-50 text-gray-800 font-sans">
+
+  <!-- NAV -->
+  <nav class="sticky top-0 z-50 bg-white border-b border-gray-200 shadow-sm">
+    <div class="max-w-6xl mx-auto px-6 flex items-center justify-between h-14">
+      <span class="font-bold text-red-600 text-lg tracking-tight">Proyecto Ágil</span>
+      <div class="hidden md:flex gap-6 text-sm font-medium text-gray-600">
+        <a href="#resumen"      class="nav-link pb-1">Resumen</a>
+        <a href="#arquitectura" class="nav-link pb-1">Arquitectura</a>
+        <a href="#agentes"      class="nav-link pb-1">Agentes</a>
+        <a href="#seguridad"    class="nav-link pb-1">Seguridad</a>
+        <a href="#metricas"     class="nav-link pb-1">Métricas</a>
+        <a href="#costos"       class="nav-link pb-1">Costos</a>
+      </div>
+    </div>
+  </nav>
+
+  <!-- HERO -->
+  <header class="bg-white border-b border-gray-100 py-16 px-6">
+    <div class="max-w-4xl mx-auto text-center">
+      <div class="flex justify-center gap-2 mb-5">
+        <span class="badge tag-tech">Agentic AI</span>
+        <span class="badge tag-tech">AWS Serverless</span>
+        <span class="badge tag-biz">WhatsApp</span>
+        <span class="badge tag-legal">Compliance</span>
+      </div>
+      <h1 class="text-4xl md:text-5xl font-extrabold text-gray-900 leading-tight mb-4">
+        Sistema Multi-Agente de<br/>Gestión de Cobranza
+      </h1>
+      <p class="text-xl text-gray-500 max-w-2xl mx-auto">
+        Automatización inteligente de la recuperación de cartera vencida vía WhatsApp,
+        con arquitectura 100% serverless en AWS y protección de cumplimiento integrada.
+      </p>
+      <div class="mt-8 flex flex-wrap justify-center gap-4">
+        <a href="https://github.com/Epalaciol/proyectoCobranzaAgent"
+           target="_blank"
+           class="px-6 py-3 bg-gray-900 text-white rounded-lg text-sm font-semibold hover:bg-gray-700 transition">
+          Ver código en GitHub
+        </a>
+        <a href="#arquitectura"
+           class="px-6 py-3 bg-red-600 text-white rounded-lg text-sm font-semibold hover:bg-red-700 transition">
+          Ver arquitectura
+        </a>
+      </div>
+    </div>
+  </header>
+
+  <main class="max-w-6xl mx-auto px-6 py-14 space-y-20">
+
+    <!-- RESUMEN EJECUTIVO -->
+    <section id="resumen">
+      <h2 class="text-2xl font-bold text-gray-900 mb-2">Resumen Ejecutivo</h2>
+      <p class="text-gray-500 text-sm mb-8">Para equipos de negocio, tecnología y legal</p>
+      <div class="grid md:grid-cols-3 gap-6">
+        <div class="section-card bg-white rounded-xl border border-gray-200 p-6">
+          <div class="text-3xl mb-3">📱</div>
+          <h3 class="font-bold text-gray-900 mb-2">El canal</h3>
+          <p class="text-gray-600 text-sm">WhatsApp tiene <strong>+90% de tasa de apertura</strong> en Panamá frente al 20-30% del correo. El agente se comunica en el canal donde el cliente ya está.</p>
+        </div>
+        <div class="section-card bg-white rounded-xl border border-gray-200 p-6">
+          <div class="text-3xl mb-3">🤖</div>
+          <h3 class="font-bold text-gray-900 mb-2">La solución</h3>
+          <p class="text-gray-600 text-sm">4 agentes especializados de IA orquestan la conversación: validan identidad, negocian el pago, registran acuerdos y escalan a humano cuando es necesario.</p>
+        </div>
+        <div class="section-card bg-white rounded-xl border border-gray-200 p-6">
+          <div class="text-3xl mb-3">💰</div>
+          <h3 class="font-bold text-gray-900 mb-2">El impacto</h3>
+          <p class="text-gray-600 text-sm">Costo estimado de <strong>$0.002 por conversación completa</strong> vs $2–5 de un agente humano en call center — reducción del 99.9% en costo por interacción.</p>
+        </div>
+      </div>
+
+      <div class="mt-8 bg-white rounded-xl border border-gray-200 p-6">
+        <h3 class="font-bold text-gray-900 mb-4">¿Qué puede hacer el agente?</h3>
+        <div class="grid md:grid-cols-2 gap-3 text-sm">
+          <div class="flex items-start gap-2"><span class="text-green-500 font-bold mt-0.5">✓</span><span>Confirmar la identidad del titular de la línea</span></div>
+          <div class="flex items-start gap-2"><span class="text-green-500 font-bold mt-0.5">✓</span><span>Consultar el saldo pendiente en tiempo real</span></div>
+          <div class="flex items-start gap-2"><span class="text-green-500 font-bold mt-0.5">✓</span><span>Ofrecer pago total con link personalizado</span></div>
+          <div class="flex items-start gap-2"><span class="text-green-500 font-bold mt-0.5">✓</span><span>Proponer planes de 2 o 3 cuotas con fechas reales</span></div>
+          <div class="flex items-start gap-2"><span class="text-green-500 font-bold mt-0.5">✓</span><span>Registrar promesas de pago en el CRM</span></div>
+          <div class="flex items-start gap-2"><span class="text-green-500 font-bold mt-0.5">✓</span><span>Escalar a un asesor humano cuando corresponde</span></div>
+          <div class="flex items-start gap-2"><span class="text-green-500 font-bold mt-0.5">✓</span><span>Hacer follow-up automático si el cliente no responde</span></div>
+          <div class="flex items-start gap-2"><span class="text-green-500 font-bold mt-0.5">✓</span><span>Respetar opt-out (STOP) inmediatamente</span></div>
+          <div class="flex items-start gap-2"><span class="text-red-500 font-bold mt-0.5">✗</span><span>Prometer condonación de deuda (bloqueado por Guardrails)</span></div>
+          <div class="flex items-start gap-2"><span class="text-red-500 font-bold mt-0.5">✗</span><span>Responder preguntas ajenas a la cuenta LLA</span></div>
+        </div>
+      </div>
+    </section>
+
+    <!-- ARQUITECTURA -->
+    <section id="arquitectura">
+      <h2 class="text-2xl font-bold text-gray-900 mb-2">Arquitectura AWS</h2>
+      <p class="text-gray-500 text-sm mb-8">100% Serverless — escala de cero a miles de conversaciones sin infraestructura fija</p>
+
+      <div class="bg-white rounded-xl border border-gray-200 p-6 overflow-x-auto">
+        <div class="mermaid">
+flowchart TD
+    User(["👤 Cliente en WhatsApp"]) <-->|Meta API| Meta["Meta WhatsApp\nCloud API"]
+
+    subgraph AWS ["☁️ AWS Cloud — Región LLA"]
+        WAF["AWS WAF\nProtección entrada"]
+        APIGW["API Gateway\nHTTP API"]
+        SQS["SQS FIFO\nIngesta desacoplada"]
+
+        subgraph Agent ["Lambda — Orquestador"]
+            Sig["① Validar firma Meta"]
+            Logic["② ReAct + Tools"]
+        end
+
+        subgraph Bedrock ["Amazon Bedrock"]
+            GR["Guardrails\nCompliance"]
+            NM["Nova Micro\nValidador"]
+            CH["Claude Haiku\nNegociador"]
+            NL["Nova Lite\nRegistrador"]
+        end
+
+        DDB[("DynamoDB\nMetadata + TTL")]
+        S3H[("S3\nHistorial chats")]
+        S3C[("S3\nCSV Campañas")]
+        APC["AppConfig\nReglas por país"]
+        SM["Secrets Manager"]
+        EB["EventBridge\nFollow-ups"]
+        SF["Step Functions\nCampañas outbound"]
+        CW["CloudWatch\nDashboard"]
+    end
+
+    subgraph Core ["On-Premise LLA"]
+        Billing[("Billing API\nSolo lectura")]
+        CRM[("CRM API\nEscritura limitada")]
+    end
+
+    Meta --> WAF --> APIGW --> SQS --> Agent
+    Agent <--> Bedrock
+    Agent <--> DDB & S3H & APC & SM
+    Agent --> Billing & CRM & EB & CW
+    S3C --> SF --> SQS
+        </div>
+      </div>
+
+      <div class="mt-8 grid md:grid-cols-2 gap-4">
+        <div class="bg-white rounded-xl border border-gray-200 p-5">
+          <h3 class="font-bold text-gray-900 mb-3">Decisiones clave</h3>
+          <ul class="space-y-2 text-sm text-gray-700">
+            <li><strong>HTTP API</strong> en lugar de REST API — 70% más barato para un webhook receiver</li>
+            <li><strong>SQS FIFO</strong> — ordena mensajes del mismo cliente; HTTP 200 a Meta en &lt;100ms</li>
+            <li><strong>Sin Tool Lambdas</strong> — el orquestador llama APIs directamente, eliminando 200–500ms por herramienta</li>
+            <li><strong>Bedrock Guardrails</strong> — compliance dentro del mismo llamado al modelo, sin LLM extra</li>
+            <li><strong>DynamoDB + S3</strong> — metadata en DDB (acceso rápido), historial completo en S3 (sin límite 400KB)</li>
+            <li><strong>Step Functions Express</strong> — 40× más barato que Standard para campañas masivas</li>
+          </ul>
+        </div>
+        <div class="bg-white rounded-xl border border-gray-200 p-5">
+          <h3 class="font-bold text-gray-900 mb-3">Selección de modelo por agente</h3>
+          <table class="w-full text-sm">
+            <thead><tr class="text-gray-500 text-xs uppercase"><th class="text-left pb-2">Agente</th><th class="text-left pb-2">Modelo</th><th class="text-left pb-2">Razón</th></tr></thead>
+            <tbody class="divide-y divide-gray-100">
+              <tr class="py-2"><td class="py-2 font-medium">Validador</td><td>Nova Micro</td><td class="text-gray-500">Detección binaria simple</td></tr>
+              <tr><td class="py-2 font-medium">Negociador</td><td>Claude Haiku</td><td class="text-gray-500">Razonamiento complejo</td></tr>
+              <tr><td class="py-2 font-medium">Registrador</td><td>Nova Lite</td><td class="text-gray-500">Extracción estructurada</td></tr>
+              <tr><td class="py-2 font-medium">Supervisor</td><td>Guardrails</td><td class="text-gray-500">Sin LLM call extra</td></tr>
+            </tbody>
+          </table>
+        </div>
+      </div>
+    </section>
+
+    <!-- AGENTES -->
+    <section id="agentes">
+      <h2 class="text-2xl font-bold text-gray-900 mb-2">Cómo funcionan los Agentes</h2>
+      <p class="text-gray-500 text-sm mb-8">Patrón ReAct (Reason & Act) con especialización por fase de la conversación</p>
+
+      <div class="grid md:grid-cols-2 lg:grid-cols-4 gap-4 mb-8">
+        <div class="bg-white rounded-xl border border-blue-200 p-5">
+          <div class="text-2xl mb-2">🔵</div>
+          <h3 class="font-bold text-blue-800 mb-1">Agente 1 — Validador</h3>
+          <p class="text-xs text-gray-600 mb-3">Confirma que habla con el titular de la línea. Sin acceso a datos de deuda.</p>
+          <div class="text-xs text-gray-500 font-mono">modelo: Nova Micro</div>
+        </div>
+        <div class="bg-white rounded-xl border border-yellow-200 p-5">
+          <div class="text-2xl mb-2">🟡</div>
+          <h3 class="font-bold text-yellow-800 mb-1">Agente 2 — Negociador</h3>
+          <p class="text-xs text-gray-600 mb-3">Propone pago total → 2 cuotas → 3 cuotas → promesa → canales alternativos. Adapta tono según riesgo del cliente.</p>
+          <div class="text-xs text-gray-500 font-mono">modelo: Claude Haiku</div>
+        </div>
+        <div class="bg-white rounded-xl border border-orange-200 p-5">
+          <div class="text-2xl mb-2">🟠</div>
+          <h3 class="font-bold text-orange-800 mb-1">Agente 3 — Registrador</h3>
+          <p class="text-xs text-gray-600 mb-3">Extrae monto y fecha del historial y los registra formalmente en el CRM.</p>
+          <div class="text-xs text-gray-500 font-mono">modelo: Nova Lite</div>
+        </div>
+        <div class="bg-white rounded-xl border border-green-200 p-5">
+          <div class="text-2xl mb-2">🟢</div>
+          <h3 class="font-bold text-green-800 mb-1">Agente 4 — Cierre</h3>
+          <p class="text-xs text-gray-600 mb-3">Confirma el acuerdo, celebra y cierra la sesión con calidez.</p>
+          <div class="text-xs text-gray-500 font-mono">modelo: Nova Lite</div>
+        </div>
+      </div>
+
+      <div class="bg-white rounded-xl border border-gray-200 p-6">
+        <h3 class="font-bold text-gray-900 mb-3">Flujo de una conversación típica</h3>
+        <div class="flex flex-wrap gap-2 items-center text-sm">
+          <span class="bg-blue-100 text-blue-800 px-3 py-1.5 rounded-lg font-medium">① Cliente escribe</span>
+          <span class="text-gray-400">→</span>
+          <span class="bg-gray-100 text-gray-700 px-3 py-1.5 rounded-lg font-medium">② Validar firma Meta</span>
+          <span class="text-gray-400">→</span>
+          <span class="bg-blue-100 text-blue-800 px-3 py-1.5 rounded-lg font-medium">③ Validador confirma identidad</span>
+          <span class="text-gray-400">→</span>
+          <span class="bg-yellow-100 text-yellow-800 px-3 py-1.5 rounded-lg font-medium">④ Negociador propone pago</span>
+          <span class="text-gray-400">→</span>
+          <span class="bg-orange-100 text-orange-800 px-3 py-1.5 rounded-lg font-medium">⑤ Registrador asienta en CRM</span>
+          <span class="text-gray-400">→</span>
+          <span class="bg-red-50 text-red-700 px-3 py-1.5 rounded-lg font-medium">⑥ Guardrails revisa</span>
+          <span class="text-gray-400">→</span>
+          <span class="bg-green-100 text-green-800 px-3 py-1.5 rounded-lg font-medium">⑦ Mensaje al cliente</span>
+        </div>
+        <p class="text-xs text-gray-500 mt-4">Latencia objetivo p95: <strong>&lt;5 segundos</strong> desde que el cliente envía el mensaje hasta que recibe respuesta.</p>
+      </div>
+    </section>
+
+    <!-- SEGURIDAD Y LEGAL -->
+    <section id="seguridad">
+      <h2 class="text-2xl font-bold text-gray-900 mb-2">Seguridad, Compliance y Legal</h2>
+      <p class="text-gray-500 text-sm mb-8">Capas de protección técnicas y consideraciones regulatorias</p>
+
+      <div class="grid md:grid-cols-2 gap-6 mb-6">
+        <div class="bg-white rounded-xl border border-gray-200 p-6">
+          <h3 class="font-bold text-gray-900 mb-4">🛡️ Protección contra Prompt Injection</h3>
+          <p class="text-sm text-gray-600 mb-4">El riesgo: un cliente malintencionado intenta usar el agente como un ChatGPT de propósito general, incurriendo en costos no autorizados de LLM.</p>
+          <div class="space-y-3">
+            <div class="flex items-start gap-3 text-sm">
+              <span class="bg-red-100 text-red-700 rounded px-2 py-0.5 font-mono text-xs mt-0.5 shrink-0">Capa 1</span>
+              <div><strong>Límite de longitud</strong> — mensajes &gt;600 caracteres son rechazados antes de llegar al LLM</div>
+            </div>
+            <div class="flex items-start gap-3 text-sm">
+              <span class="bg-red-100 text-red-700 rounded px-2 py-0.5 font-mono text-xs mt-0.5 shrink-0">Capa 2</span>
+              <div><strong>Detección off-topic</strong> — patrones como "ignora instrucciones", "act as", "jailbreak" se filtran sin invocar el LLM</div>
+            </div>
+            <div class="flex items-start gap-3 text-sm">
+              <span class="bg-red-100 text-red-700 rounded px-2 py-0.5 font-mono text-xs mt-0.5 shrink-0">Capa 3</span>
+              <div><strong>Límite de sesión</strong> — máximo 25 turnos por sesión; después se cierra automáticamente</div>
+            </div>
+            <div class="flex items-start gap-3 text-sm">
+              <span class="bg-red-100 text-red-700 rounded px-2 py-0.5 font-mono text-xs mt-0.5 shrink-0">Capa 4</span>
+              <div><strong>System prompts restrictivos</strong> — los agentes tienen identidad y propósito fijos, resistentes a instrucciones del usuario</div>
+            </div>
+            <div class="flex items-start gap-3 text-sm">
+              <span class="bg-red-100 text-red-700 rounded px-2 py-0.5 font-mono text-xs mt-0.5 shrink-0">Capa 5</span>
+              <div><strong>Bedrock Guardrails</strong> — rechaza respuestas off-topic o que violan políticas antes de enviarlas al cliente</div>
+            </div>
+            <div class="flex items-start gap-3 text-sm">
+              <span class="bg-red-100 text-red-700 rounded px-2 py-0.5 font-mono text-xs mt-0.5 shrink-0">Capa 6</span>
+              <div><strong>AWS WAF + rate limit DynamoDB</strong> — máximo N invocaciones por número de teléfono por día</div>
+            </div>
+          </div>
+        </div>
+
+        <div class="bg-white rounded-xl border border-gray-200 p-6">
+          <h3 class="font-bold text-gray-900 mb-4">⚖️ Consideraciones Legales (Panamá)</h3>
+          <div class="space-y-3 text-sm">
+            <div class="flex items-start gap-2">
+              <span class="text-yellow-500 font-bold mt-0.5">▸</span>
+              <div><strong>Consentimiento:</strong> El contacto por WhatsApp requiere consentimiento previo. Se asume que el contrato de servicio de LLA lo incluye. Para clientes con número actualizado no registrado, se requiere opt-in explícito.</div>
+            </div>
+            <div class="flex items-start gap-2">
+              <span class="text-yellow-500 font-bold mt-0.5">▸</span>
+              <div><strong>Opt-out inmediato:</strong> Un mensaje "STOP" cierra la sesión permanentemente y no se vuelve a contactar a ese número en la campaña activa.</div>
+            </div>
+            <div class="flex items-start gap-2">
+              <span class="text-yellow-500 font-bold mt-0.5">▸</span>
+              <div><strong>Privacidad de datos:</strong> Amazon Bedrock no utiliza los datos de conversación para entrenar modelos públicos. El historial se almacena en S3 con cifrado en reposo (SSE-S3).</div>
+            </div>
+            <div class="flex items-start gap-2">
+              <span class="text-yellow-500 font-bold mt-0.5">▸</span>
+              <div><strong>Auditoría:</strong> Cada mensaje enviado al cliente queda registrado en S3 con timestamp. Disponible para revisión regulatoria por 90 días en hot storage, luego en Glacier.</div>
+            </div>
+            <div class="flex items-start gap-2">
+              <span class="text-yellow-500 font-bold mt-0.5">▸</span>
+              <div><strong>Identificación del agente:</strong> El agente se presenta como "Asistente Virtual de LLA", no se hace pasar por persona humana.</div>
+            </div>
+            <div class="flex items-start gap-2">
+              <span class="text-yellow-500 font-bold mt-0.5">▸</span>
+              <div><strong>Límites de cobranza:</strong> Guardrails impiden que el agente utilice lenguaje intimidatorio, haga referencias legales infundadas o prometa condiciones no autorizadas.</div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <div class="bg-white rounded-xl border border-gray-200 p-6">
+        <h3 class="font-bold text-gray-900 mb-4">🔐 IAM Least Privilege — Sin acceso directo a bases de datos</h3>
+        <div class="grid md:grid-cols-3 gap-4 text-sm">
+          <div class="bg-gray-50 rounded-lg p-4">
+            <div class="font-mono text-xs text-gray-500 mb-2">Agent Lambda Role</div>
+            <ul class="space-y-1 text-gray-700">
+              <li>✓ billing:Read (solo GET)</li>
+              <li>✓ crm:WritePromise</li>
+              <li>✓ crm:WriteEscalation</li>
+              <li>✓ s3:GetObject (bucket chats)</li>
+              <li>✓ s3:PutObject (bucket chats)</li>
+              <li>✓ dynamodb:GetItem / PutItem</li>
+              <li>✗ dynamodb:Scan / DeleteItem</li>
+              <li>✗ s3:DeleteObject</li>
+            </ul>
+          </div>
+          <div class="bg-gray-50 rounded-lg p-4">
+            <div class="font-mono text-xs text-gray-500 mb-2">Step Functions Role</div>
+            <ul class="space-y-1 text-gray-700">
+              <li>✓ s3:GetObject (bucket campañas)</li>
+              <li>✓ sqs:SendMessage</li>
+              <li>✗ bedrock:* (no invoca LLM)</li>
+              <li>✗ crm:* (no escribe CRM)</li>
+            </ul>
+          </div>
+          <div class="bg-gray-50 rounded-lg p-4">
+            <div class="font-mono text-xs text-gray-500 mb-2">Datos en tránsito y reposo</div>
+            <ul class="space-y-1 text-gray-700">
+              <li>✓ TLS 1.2+ en todas las APIs</li>
+              <li>✓ S3 SSE-S3 (cifrado en reposo)</li>
+              <li>✓ DynamoDB encryption at rest</li>
+              <li>✓ Secrets Manager (rotación auto)</li>
+              <li>✓ VPC para acceso a sistemas core</li>
+            </ul>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- MÉTRICAS -->
+    <section id="metricas">
+      <h2 class="text-2xl font-bold text-gray-900 mb-2">Métricas y Observabilidad</h2>
+      <p class="text-gray-500 text-sm mb-8">Dashboard propuesto en Datadog — métricas de negocio y técnicas</p>
+
+      <!-- Métricas de negocio -->
+      <h3 class="font-bold text-gray-800 mb-4 flex items-center gap-2">
+        <span class="bg-green-100 text-green-700 rounded-full px-3 py-0.5 text-xs font-bold">NEGOCIO</span>
+        KPIs para el área comercial y financiera
+      </h3>
+      <div class="grid md:grid-cols-3 gap-4 mb-8">
+        <div class="metric-card metric-biz bg-white rounded-xl p-5">
+          <div class="text-xs text-green-700 font-bold uppercase mb-1">Métrica principal</div>
+          <div class="text-lg font-bold text-gray-900 mb-1">Tasa de cartera recuperada</div>
+          <div class="text-xs text-gray-500 mb-3">Monto cobrado / monto total gestionado por el agente</div>
+          <div class="font-mono text-xs bg-gray-900 text-green-300 rounded p-2">lla.business.debt.recovered_pct<br/>Meta: &gt; 30% en 30 días</div>
+        </div>
+        <div class="metric-card metric-biz bg-white rounded-xl p-5">
+          <div class="text-xs text-green-700 font-bold uppercase mb-1">Conversión</div>
+          <div class="text-lg font-bold text-gray-900 mb-1">Acuerdos de pago y conversiones</div>
+          <div class="text-xs text-gray-500 mb-3">Promesas registradas + pagos inmediatos completados</div>
+          <div class="font-mono text-xs bg-gray-900 text-green-300 rounded p-2">lla.business.payment.promise<br/>lla.business.payment.immediate<br/>Meta FCR: &gt; 60%</div>
+        </div>
+        <div class="metric-card metric-biz bg-white rounded-xl p-5">
+          <div class="text-xs text-green-700 font-bold uppercase mb-1">Eficiencia</div>
+          <div class="text-lg font-bold text-gray-900 mb-1">Tiempo agente IA vs asesor humano</div>
+          <div class="text-xs text-gray-500 mb-3">Duración promedio de conversación: bot vs humano en call center</div>
+          <div class="font-mono text-xs bg-gray-900 text-green-300 rounded p-2">lla.business.session.duration<br/>tag: channel:bot|human<br/>Esperado bot: &lt; 8 min</div>
+        </div>
+        <div class="metric-card metric-biz bg-white rounded-xl p-5">
+          <div class="text-xs text-green-700 font-bold uppercase mb-1">Escalamiento</div>
+          <div class="text-lg font-bold text-gray-900 mb-1">Interacción con asesores</div>
+          <div class="text-xs text-gray-500 mb-3">% conversaciones transferidas a humano vs resueltas por el bot</div>
+          <div class="font-mono text-xs bg-gray-900 text-green-300 rounded p-2">lla.business.escalation.rate<br/>Meta: &lt; 20% de sesiones</div>
+        </div>
+        <div class="metric-card metric-biz bg-white rounded-xl p-5">
+          <div class="text-xs text-green-700 font-bold uppercase mb-1">Cumplimiento</div>
+          <div class="text-lg font-bold text-gray-900 mb-1">Tasa de promesas cumplidas</div>
+          <div class="text-xs text-gray-500 mb-3">Clientes que pagaron en la fecha acordada / total con promesa</div>
+          <div class="font-mono text-xs bg-gray-900 text-green-300 rounded p-2">lla.business.promise.fulfilled<br/>Meta: &gt; 70%</div>
+        </div>
+        <div class="metric-card metric-biz bg-white rounded-xl p-5">
+          <div class="text-xs text-green-700 font-bold uppercase mb-1">Retención</div>
+          <div class="text-lg font-bold text-gray-900 mb-1">Tasa de opt-out (STOP)</div>
+          <div class="text-xs text-gray-500 mb-3">Clientes que solicitan no ser contactados por este canal</div>
+          <div class="font-mono text-xs bg-gray-900 text-green-300 rounded p-2">lla.business.optout.rate<br/>Alerta si &gt; 5%</div>
+        </div>
+      </div>
+
+      <!-- Métricas técnicas -->
+      <h3 class="font-bold text-gray-800 mb-4 flex items-center gap-2">
+        <span class="bg-blue-100 text-blue-700 rounded-full px-3 py-0.5 text-xs font-bold">TÉCNICO</span>
+        KPIs para el equipo de operaciones
+      </h3>
+      <div class="grid md:grid-cols-3 gap-4 mb-10">
+        <div class="metric-card metric-tech bg-white rounded-xl p-5">
+          <div class="text-xs text-blue-700 font-bold uppercase mb-1">Latencia</div>
+          <div class="text-lg font-bold text-gray-900 mb-1">Tiempo de respuesta end-to-end</div>
+          <div class="text-xs text-gray-500 mb-3">Desde que el cliente envía hasta que recibe la respuesta del agente</div>
+          <div class="font-mono text-xs bg-gray-900 text-blue-300 rounded p-2">lla.agent.response.latency<br/>p95 Meta: &lt; 5,000ms<br/>p99 Meta: &lt; 8,000ms</div>
+        </div>
+        <div class="metric-card metric-tech bg-white rounded-xl p-5">
+          <div class="text-xs text-blue-700 font-bold uppercase mb-1">Desvíos a asesores</div>
+          <div class="text-lg font-bold text-gray-900 mb-1">Escalamientos por motivo</div>
+          <div class="text-xs text-gray-500 mb-3">Breakdown de por qué el agente cedió a un humano (cliente agresivo, deuda compleja, etc.)</div>
+          <div class="font-mono text-xs bg-gray-900 text-blue-300 rounded p-2">lla.agent.escalation<br/>tag: reason:aggressive|complex|timeout</div>
+        </div>
+        <div class="metric-card metric-tech bg-white rounded-xl p-5">
+          <div class="text-xs text-blue-700 font-bold uppercase mb-1">Compliance</div>
+          <div class="text-lg font-bold text-gray-900 mb-1">Bloqueos de Guardrails</div>
+          <div class="text-xs text-gray-500 mb-3">Respuestas interceptadas antes de llegar al cliente. Spike = posible prompt injection</div>
+          <div class="font-mono text-xs bg-gray-900 text-blue-300 rounded p-2">lla.agent.guardrail.blocked<br/>Alerta si &gt; 5% en ventana 5min</div>
+        </div>
+        <div class="metric-card metric-tech bg-white rounded-xl p-5">
+          <div class="text-xs text-blue-700 font-bold uppercase mb-1">LLM</div>
+          <div class="text-lg font-bold text-gray-900 mb-1">Latencia de Bedrock por modelo</div>
+          <div class="text-xs text-gray-500 mb-3">Tiempo de invocación separado por agente para identificar cuellos de botella</div>
+          <div class="font-mono text-xs bg-gray-900 text-blue-300 rounded p-2">lla.bedrock.latency<br/>tag: agent:validador|negociador|registrador</div>
+        </div>
+        <div class="metric-card metric-tech bg-white rounded-xl p-5">
+          <div class="text-xs text-blue-700 font-bold uppercase mb-1">Errores</div>
+          <div class="text-lg font-bold text-gray-900 mb-1">Tasa de errores Lambda</div>
+          <div class="text-xs text-gray-500 mb-3">Invocaciones que terminaron en excepción no manejada o timeout</div>
+          <div class="font-mono text-xs bg-gray-900 text-blue-300 rounded p-2">lla.agent.error.rate<br/>Alerta si &gt; 0.5%</div>
+        </div>
+        <div class="metric-card metric-tech bg-white rounded-xl p-5">
+          <div class="text-xs text-blue-700 font-bold uppercase mb-1">Seguridad</div>
+          <div class="text-lg font-bold text-gray-900 mb-1">Intentos de prompt injection</div>
+          <div class="text-xs text-gray-500 mb-3">Mensajes rechazados por guardrails de entrada (longitud, off-topic, patrones maliciosos)</div>
+          <div class="font-mono text-xs bg-gray-900 text-blue-300 rounded p-2">lla.security.input.rejected<br/>tag: reason:length|pattern|turns</div>
+        </div>
+      </div>
+
+      <!-- Datadog integration -->
+      <div class="bg-white rounded-xl border border-gray-200 p-6">
+        <h3 class="font-bold text-gray-900 mb-1">Integración con Datadog — Ejemplo de instrumentación</h3>
+        <p class="text-sm text-gray-500 mb-4">Cómo emitir estas métricas desde el código Python del Agent Lambda</p>
+        <pre><code># Instalar: pip install datadog-lambda
+from datadog_lambda.metric import lambda_metric
+import time
+
+# En multi_agent.py — dentro de procesar_mensaje()
+def procesar_mensaje(historial_mensajes, fase_actual):
+    t_inicio = time.time()
+
+    # ... lógica del agente ...
+
+    latencia_ms = (time.time() - t_inicio) * 1000
+
+    # Métrica de latencia end-to-end
+    lambda_metric("lla.agent.response.latency", latencia_ms,
+                  tags=[f"phase:{fase_actual}", "env:prod"])
+
+    # Métrica de resultado de sesión
+    lambda_metric("lla.business.conversation.outcome", 1,
+                  tags=[f"outcome:{outcome}", f"phase:{nueva_fase}"])
+
+    return texto_limpio, chat_activo, historial_actualizado, nueva_fase
+
+
+# En validar_input() — cuando se rechaza un mensaje
+def validar_input(texto, turno_actual):
+    if len(texto) > MAX_INPUT_LENGTH:
+        lambda_metric("lla.security.input.rejected", 1,
+                      tags=["reason:length", "env:prod"])
+        return False, "..."
+
+    for patron in _PATRONES_OFFTOPIC:
+        if patron in texto.lower():
+            lambda_metric("lla.security.input.rejected", 1,
+                          tags=["reason:pattern", f"pattern:{patron[:20]}", "env:prod"])
+            return False, "..."
+
+
+# En escalar_a_humano() — tool
+@tool
+def escalar_a_humano(telefono: str, motivo: str) -> str:
+    lambda_metric("lla.agent.escalation", 1,
+                  tags=[f"reason:{motivo[:30]}", "env:prod"])
+    ...
+
+
+# En registrar_promesa_pago() — tool
+@tool
+def registrar_promesa_pago(telefono, monto_usd, fecha_promesa):
+    lambda_metric("lla.business.payment.promise", monto_usd,
+                  tags=["env:prod"])
+    ...
+
+
+# En registrar_pago_inmediato() — tool
+@tool
+def registrar_pago_inmediato(telefono, monto_usd):
+    lambda_metric("lla.business.payment.immediate", monto_usd,
+                  tags=["env:prod"])
+    ...</code></pre>
+        <p class="text-xs text-gray-400 mt-3">
+          En el <code>serverless.yml</code> o <code>template.yaml</code> de la Lambda, habilitar la extensión Datadog con
+          <code>DD_FLUSH_TO_LOG: true</code> y el layer <code>arn:aws:lambda:...:datadog:DatadogExtension:...</code>.
+          Las métricas aparecen en Datadog sin modificar permisos IAM — se envían vía CloudWatch Logs.
+        </p>
+      </div>
+    </section>
+
+    <!-- COSTOS -->
+    <section id="costos">
+      <h2 class="text-2xl font-bold text-gray-900 mb-2">Estimación de Costos</h2>
+      <p class="text-gray-500 text-sm mb-8">Basado en precios públicos de AWS — región us-east-1</p>
+
+      <div class="grid md:grid-cols-2 gap-6 mb-8">
+        <div class="bg-white rounded-xl border border-gray-200 p-6">
+          <h3 class="font-bold text-gray-900 mb-1">10,000 conversaciones / mes</h3>
+          <p class="text-xs text-gray-500 mb-4">5 turnos promedio · 3 invocaciones Bedrock por turno</p>
+          <table class="w-full text-sm">
+            <thead><tr class="text-gray-400 text-xs border-b"><th class="text-left pb-2">Servicio</th><th class="text-right pb-2">Costo/mes</th></tr></thead>
+            <tbody class="divide-y divide-gray-50">
+              <tr><td class="py-1.5 text-gray-700">API Gateway HTTP API</td><td class="text-right">$0.05</td></tr>
+              <tr><td class="py-1.5 text-gray-700">SQS FIFO</td><td class="text-right">$0.03</td></tr>
+              <tr><td class="py-1.5 text-gray-700">Lambda (orquestador)</td><td class="text-right">$0.80</td></tr>
+              <tr><td class="py-1.5 text-gray-700">Bedrock Nova Micro (Validador)</td><td class="text-right">$0.60</td></tr>
+              <tr><td class="py-1.5 text-gray-700">Bedrock Claude Haiku (Negociador)</td><td class="text-right">$4.00</td></tr>
+              <tr><td class="py-1.5 text-gray-700">Bedrock Nova Lite (Registrador)</td><td class="text-right">$1.00</td></tr>
+              <tr><td class="py-1.5 text-gray-700">Bedrock Guardrails</td><td class="text-right">$3.75</td></tr>
+              <tr><td class="py-1.5 text-gray-700">DynamoDB on-demand</td><td class="text-right">$0.50</td></tr>
+              <tr><td class="py-1.5 text-gray-700">S3 (historial + campañas)</td><td class="text-right">$0.30</td></tr>
+              <tr><td class="py-1.5 text-gray-700">EventBridge + Step Functions</td><td class="text-right">$0.01</td></tr>
+              <tr><td class="py-1.5 text-gray-700">Secrets Manager</td><td class="text-right">$2.00</td></tr>
+              <tr><td class="py-1.5 text-gray-700">WAF + CloudWatch + X-Ray</td><td class="text-right">$8.05</td></tr>
+              <tr class="border-t-2 border-gray-300 font-bold"><td class="py-2">TOTAL</td><td class="text-right text-green-700">~$21/mes</td></tr>
+            </tbody>
+          </table>
+        </div>
+
+        <div class="flex flex-col gap-4">
+          <div class="bg-white rounded-xl border border-gray-200 p-6">
+            <h3 class="font-bold text-gray-900 mb-1">100,000 conversaciones / mes</h3>
+            <p class="text-xs text-gray-500 mb-3">Escalando los costos variables</p>
+            <div class="text-4xl font-extrabold text-green-600 mb-1">~$205<span class="text-xl text-gray-400">/mes</span></div>
+            <div class="text-sm text-gray-500">$0.002 por conversación completa</div>
+          </div>
+
+          <div class="bg-red-50 rounded-xl border border-red-200 p-6">
+            <h3 class="font-bold text-red-900 mb-3">Comparación vs call center humano</h3>
+            <div class="flex items-end justify-between mb-2">
+              <div>
+                <div class="text-xs text-gray-500">Agente IA (por conversación)</div>
+                <div class="text-2xl font-bold text-green-600">$0.002</div>
+              </div>
+              <div class="text-gray-400 font-bold text-xl">vs</div>
+              <div class="text-right">
+                <div class="text-xs text-gray-500">Call center humano (por llamada 5 min)</div>
+                <div class="text-2xl font-bold text-red-600">$2–5</div>
+              </div>
+            </div>
+            <div class="bg-white rounded-lg p-3 mt-3">
+              <div class="text-sm font-bold text-gray-800">Reducción de costo por interacción:</div>
+              <div class="text-3xl font-extrabold text-red-600">99.9%</div>
+              <div class="text-xs text-gray-500 mt-1">El agente IA gestiona el mismo caso a 1/1,000 del costo, 24/7, sin tiempo de espera.</div>
+            </div>
+          </div>
+
+          <div class="bg-white rounded-xl border border-gray-200 p-5">
+            <h3 class="font-bold text-gray-900 mb-3">Palancas de optimización adicional</h3>
+            <ul class="space-y-1.5 text-sm text-gray-700">
+              <li>→ <strong>Bedrock Prompt Caching</strong>: system prompts idénticos → 90% menos en tokens de entrada</li>
+              <li>→ <strong>Truncar historial</strong>: últimos 10 turnos en lugar del historial completo</li>
+              <li>→ <strong>Lambda Provisioned Concurrency</strong>: solo durante horas de campaña</li>
+            </ul>
+          </div>
+        </div>
+      </div>
+    </section>
+
+  </main>
+
+  <!-- FOOTER -->
+  <footer class="border-t border-gray-200 bg-white mt-20 py-8 px-6">
+    <div class="max-w-6xl mx-auto flex flex-col md:flex-row justify-between items-center gap-4 text-sm text-gray-400">
+      <div class="font-semibold text-gray-700">Proyecto Ágil — Sistema Multi-Agente de Cobranza</div>
+      <div class="flex gap-6">
+        <a href="https://github.com/Epalaciol/proyectoCobranzaAgent" target="_blank" class="hover:text-gray-700 transition">GitHub</a>
+        <a href="../doc/arquitectura_aws.md" class="hover:text-gray-700 transition">Arquitectura AWS</a>
+      </div>
+    </div>
+  </footer>
+
+  <script>
+    mermaid.initialize({ startOnLoad: true, theme: 'default', securityLevel: 'loose' });
+
+    // Highlight active nav link on scroll
+    const sections = document.querySelectorAll('section[id]');
+    const navLinks = document.querySelectorAll('.nav-link');
+    window.addEventListener('scroll', () => {
+      let current = '';
+      sections.forEach(s => { if (window.scrollY >= s.offsetTop - 80) current = s.id; });
+      navLinks.forEach(a => {
+        a.classList.remove('active');
+        if (a.getAttribute('href') === '#' + current) a.classList.add('active');
+      });
+    });
+  </script>
+</body>
+</html>

@@ -25,6 +25,56 @@ logger = logging.getLogger(__name__)
 
 
 # ==========================================
+# GUARDRAILS DE ENTRADA — Anti Prompt Injection
+# ==========================================
+
+MAX_INPUT_LENGTH = 600      # caracteres máximos por mensaje
+MAX_TURNS_PER_SESSION = 25  # turnos máximos antes de cerrar la sesión
+
+# Palabras clave que indican intento de desviar al agente de su propósito
+_PATRONES_OFFTOPIC = [
+    "ignora", "ignore", "olvida", "forget", "instrucciones anteriores",
+    "previous instructions", "system prompt", "eres ahora", "you are now",
+    "actúa como", "act as", "pretend", "roleplay", "juego de rol",
+    "dime cómo", "tell me how", "receta", "recipe", "chiste", "joke",
+    "escríbeme", "write me", "código", "código python", "python code",
+    "hack", "jailbreak", "dan mode", "developer mode",
+]
+
+
+def validar_input(texto: str, turno_actual: int) -> tuple[bool, str]:
+    """
+    Valida el mensaje del usuario antes de enviarlo al LLM.
+    Retorna (es_valido, mensaje_de_rechazo_o_vacio).
+    """
+    if turno_actual >= MAX_TURNS_PER_SESSION:
+        logger.warning("Sesión cerrada por límite de turnos (%d)", turno_actual)
+        return False, (
+            "Esta conversación ha alcanzado su tiempo máximo. "
+            "Para continuar gestionando tu cuenta podés ingresar a "
+            "https://pagos.lla.com/linea o llamarnos. ¡Hasta pronto! 🙏"
+        )
+
+    if len(texto) > MAX_INPUT_LENGTH:
+        logger.warning("Input rechazado: longitud %d > %d", len(texto), MAX_INPUT_LENGTH)
+        return False, (
+            "Tu mensaje es demasiado largo para procesarlo. "
+            "¿Podés resumirlo en pocas palabras? 😊"
+        )
+
+    texto_lower = texto.lower()
+    for patron in _PATRONES_OFFTOPIC:
+        if patron in texto_lower:
+            logger.warning("Posible prompt injection detectado: patron='%s'", patron)
+            return False, (
+                "Solo puedo ayudarte con la gestión de tu cuenta LLA. "
+                "¿Querés conocer tus opciones de pago? 😊"
+            )
+
+    return True, ""
+
+
+# ==========================================
 # 1. HERRAMIENTAS (TOOLS)
 # ==========================================
 
