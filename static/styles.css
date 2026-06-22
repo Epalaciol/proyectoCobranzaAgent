@@ -1,0 +1,312 @@
+/* ============================================================
+   LLA Proyecto Ágil — WhatsApp Simulator Styles
+   ============================================================ */
+
+/* ---- Layout base ---- */
+[data-testid="stAppViewContainer"] {
+    background-color: #ECE5DD;
+}
+
+[data-testid="stHeader"] {
+    background: transparent;
+}
+
+[data-testid="stSidebar"] {
+    background-color: #F0F2F5;
+}
+
+/* Sidebar: texto general legible */
+[data-testid="stSidebar"] .stMarkdown,
+[data-testid="stSidebar"] .stMarkdown p,
+[data-testid="stSidebar"] .stMarkdown b,
+[data-testid="stSidebar"] .stMarkdown li,
+[data-testid="stSidebar"] .element-container p,
+[data-testid="stSidebar"] .stCaption p {
+    color: #111 !important;
+}
+
+/* Selectbox: label y valor seleccionado legibles */
+[data-testid="stSidebar"] .stSelectbox label,
+[data-testid="stSidebar"] .stSelectbox [data-baseweb="select"] {
+    color: #111 !important;
+    background-color: #ffffff !important;
+}
+[data-testid="stSidebar"] .stSelectbox [data-baseweb="select"] > div {
+    background-color: #ffffff !important;
+    border: 1px solid #ccc !important;
+    border-radius: 8px !important;
+}
+[data-testid="stSidebar"] .stSelectbox [data-baseweb="select"] span,
+[data-testid="stSidebar"] .stSelectbox [data-baseweb="select"] div {
+    color: #111 !important;
+}
+/* Dropdown de opciones */
+[data-baseweb="popover"] li,
+[data-baseweb="menu"] li {
+    color: #111 !important;
+    background-color: #fff !important;
+}
+[data-baseweb="menu"] li:hover {
+    background-color: #e8f5e9 !important;
+}
+
+/* Botón iniciar: texto blanco sobre verde */
+[data-testid="stSidebar"] .stButton > button {
+    color: white !important;
+}
+
+h1 {
+    display: none !important;
+}
+
+/* ---- Sidebar: card de info del cliente ---- */
+.cli-card {
+    background: #ffffff;
+    border: 1px solid #e0e0e0;
+    border-radius: 10px;
+    padding: 10px 12px;
+    font-size: 13px;
+    color: #111;
+    line-height: 1.8;
+    margin-bottom: 8px;
+}
+
+.cli-card b {
+    color: #075E54;
+}
+
+/* ---- Sidebar: botón iniciar ---- */
+[data-testid="stSidebar"] .stButton>button {
+    background: #25D366;
+    color: greenyellow;
+    border-radius: 20px;
+    border: none;
+    font-weight: 700;
+    width: 100%;
+    padding: 9px 0;
+    font-size: 14px;
+}
+
+[data-testid="stSidebar"] .stButton>button:hover {
+    background: #1da851;
+}
+
+/* ---- WhatsApp header ---- */
+.wa-header {
+    background: linear-gradient(135deg, #075E54 0%, #128C7E 100%);
+    padding: 10px 16px;
+    border-radius: 12px 12px 0 0;
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    box-shadow: 0 2px 6px rgba(0, 0, 0, 0.25);
+}
+
+.wa-avatar {
+    width: 44px;
+    height: 44px;
+    background: #25D366;
+    border-radius: 50%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 22px;
+    flex-shrink: 0;
+}
+
+.wa-header-name {
+    font-weight: 700;
+    font-size: 15px;
+    color: #fff;
+    line-height: 1.3;
+}
+
+.wa-header-status {
+    font-size: 12px;
+    color: rgba(255, 255, 255, 0.85);
+}
+
+.wa-header-badge {
+    margin-left: auto;
+    background: #25D366;
+    color: white;
+    font-size: 11px;
+    font-weight: 700;
+    padding: 3px 10px;
+    border-radius: 12px;
+}
+
+/* ---- Área de mensajes ---- */
+.wa-messages {
+    background-color: #ECE5DD;
+    background-image: url("data:image/svg+xml,%3Csvg width='52' height='52' viewBox='0 0 52 52' xmlns='http://www.w3.org/2000/svg'%3E%3Cg fill='%23C4B9A8' fill-opacity='0.18' fill-rule='evenodd'%3E%3Cpath d='M0 0h26v26H0V0zm26 26h26v26H26V26z'/%3E%3C/g%3E%3C/svg%3E");
+    padding: 12px 14px 6px 14px;
+    min-height: 440px;
+    max-height: 520px;
+    overflow-y: auto;
+    border-left: 1px solid #ccc;
+    border-right: 1px solid #ccc;
+}
+
+/* ---- Separador de fecha ---- */
+.wa-date-pill {
+    text-align: center;
+    margin: 2px 0 10px;
+}
+
+.wa-date-pill span {
+    background: rgba(225, 245, 254, 0.92);
+    color: #4a4a4a;
+    font-size: 12px;
+    padding: 3px 12px;
+    border-radius: 8px;
+    box-shadow: 0 1px 2px rgba(0, 0, 0, 0.12);
+}
+
+/* ---- Filas y burbujas ---- */
+.wa-row {
+    display: flex;
+    margin-bottom: 4px;
+}
+
+.wa-row.bot {
+    justify-content: flex-start;
+}
+
+.wa-row.user {
+    justify-content: flex-end;
+}
+
+.wa-bub {
+    max-width: 70%;
+    padding: 7px 11px 5px 11px;
+    border-radius: 8px;
+    font-size: 14px;
+    line-height: 1.55;
+    box-shadow: 0 1px 2px rgba(0, 0, 0, 0.15);
+    word-break: break-word;
+}
+
+.wa-bub.bot {
+    background: #fff;
+    color: #111;
+    border-top-left-radius: 0;
+}
+
+.wa-bub.user {
+    background: #DCF8C6;
+    color: #111;
+    border-top-right-radius: 0;
+}
+
+/* ---- Metadata (hora + check) ---- */
+.wa-meta {
+    font-size: 11px;
+    color: #999;
+    text-align: right;
+    margin-top: 3px;
+    display: flex;
+    justify-content: flex-end;
+    align-items: center;
+    gap: 3px;
+}
+
+.wa-meta.user {
+    color: #6a9955;
+}
+
+.wa-check {
+    color: #53BDEB;
+}
+
+/* ---- Footer del chat ---- */
+.wa-footer {
+    background: #F0F2F5;
+    border: 1px solid #ccc;
+    border-top: none;
+    border-radius: 0 0 12px 12px;
+    padding: 8px 12px;
+}
+
+.wa-closed {
+    text-align: center;
+    font-size: 13px;
+    padding: 10px;
+    border-radius: 8px;
+}
+
+/* ---- Shell contenedor ---- */
+.wa-shell {
+    border-radius: 12px;
+    overflow: hidden;
+    box-shadow: 0 6px 24px rgba(0, 0, 0, 0.18);
+    max-width: 640px;
+    margin: 0 auto;
+}
+
+/* ---- Typing indicator ---- */
+.wa-typing-bub {
+    display: flex;
+    align-items: center;
+    gap: 5px;
+    padding: 10px 14px !important;
+    min-width: 52px;
+}
+.wa-typing-bub span {
+    width: 7px; height: 7px;
+    background: #aaa;
+    border-radius: 50%;
+    display: inline-block;
+    animation: wa-bounce 1.2s infinite;
+}
+.wa-typing-bub span:nth-child(2) { animation-delay: 0.2s; }
+.wa-typing-bub span:nth-child(3) { animation-delay: 0.4s; }
+@keyframes wa-bounce {
+    0%, 80%, 100% { transform: translateY(0); }
+    40%           { transform: translateY(-6px); }
+}
+
+/* ---- Welcome screen ---- */
+.wa-welcome {
+    display: flex !important;
+    align-items: center;
+    justify-content: center;
+    min-height: 440px;
+}
+.wa-welcome-box {
+    text-align: center;
+    background: rgba(255,255,255,0.82);
+    border-radius: 16px;
+    padding: 32px 28px;
+    box-shadow: 0 2px 12px rgba(0,0,0,0.08);
+    max-width: 320px;
+}
+.wa-welcome-icon  { font-size: 48px; margin-bottom: 12px; }
+.wa-welcome-title { font-size: 17px; font-weight: 700; color: #075E54; margin-bottom: 10px; }
+.wa-welcome-text  { font-size: 14px; color: #444; line-height: 1.7; margin-bottom: 14px; }
+.wa-welcome-hint  { font-size: 12px; color: #888; }
+
+/* ---- Footer deshabilitado (estado inicial) ---- */
+.wa-footer-disabled {
+    opacity: 0.6;
+    cursor: not-allowed;
+}
+.wa-input-placeholder {
+    background: #e9e9e9;
+    border-radius: 24px;
+    padding: 10px 16px;
+    font-size: 14px;
+    color: #888;
+}
+
+/* ---- Chat input override ---- */
+[data-testid="stChatInput"]>div {
+    background: white !important;
+    border-radius: 24px !important;
+    border: none !important;
+    box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1) !important;
+}
+
+[data-testid="stChatInput"] textarea {
+    font-size: 14px !important;
+}

@@ -1,0 +1,41 @@
+<div class="wa-shell">
+
+  <!-- Header -->
+  <div class="wa-header">
+    <div class="wa-avatar">📱</div>
+    <div>
+      <div class="wa-header-name">{{nombre}}</div>
+      <div class="wa-header-status">{{numero}} · {{status}}</div>
+    </div>
+    <div class="wa-header-badge">LLA Ágil</div>
+  </div>
+
+  <!-- Área de mensajes -->
+  <div class="wa-messages" id="wa-msgs">
+    <div class="wa-date-pill"><span>{{fecha_label}}</span></div>
+    {{bubbles}}
+  </div>
+
+  <!-- Footer -->
+  <div class="wa-footer">
+    {{footer_content}}
+  </div>
+
+</div>
+<script data-ts="{{ts}}">
+  (function() {
+    var el = document.getElementById("wa-msgs");
+    if (!el) return;
+
+    // Scroll inmediato y diferido
+    function scrollBottom() { el.scrollTop = el.scrollHeight; }
+    scrollBottom();
+    setTimeout(scrollBottom, 50);
+    setTimeout(scrollBottom, 200);
+
+    // MutationObserver: cada vez que llegue contenido nuevo, scrollea
+    if (window._waMsgObserver) window._waMsgObserver.disconnect();
+    window._waMsgObserver = new MutationObserver(function() { scrollBottom(); });
+    window._waMsgObserver.observe(el, { childList: true, subtree: true });
+  })();
+</script>

@@ -1,0 +1,8 @@
+<div class="wa-messages" id="wa-msgs">
+  <div class="wa-date-pill"><span>{{fecha_label}}</span></div>
+  {{bubbles}}
+</div>
+<script>
+  var el = document.getElementById("wa-msgs");
+  if (el) { setTimeout(function() { el.scrollTop = el.scrollHeight; }, 50); }
+</script>

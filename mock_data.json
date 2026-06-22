@@ -1,0 +1,52 @@
+{
+  "+50712345678": {
+    "nombre": "Juan Pérez",
+    "deuda_usd": 150.00,
+    "dias_vencido": 45,
+    "servicio": "Internet 100 Mbps",
+    "pais": "Panamá",
+    "fecha_vencimiento": "2026-05-07",
+    "segmento_riesgo": "MEDIO",
+    "perfil_test": "Caso Feliz (Paga)"
+  },
+  "+50787654321": {
+    "nombre": "María Gómez",
+    "deuda_usd": 45.50,
+    "dias_vencido": 15,
+    "servicio": "Telefonía Móvil Postpago",
+    "pais": "Panamá",
+    "fecha_vencimiento": "2026-06-06",
+    "segmento_riesgo": "BAJO",
+    "perfil_test": "Caso Enojado (Escala)"
+  },
+  "+50755555555": {
+    "nombre": "Carlos Rodríguez",
+    "deuda_usd": 800.00,
+    "dias_vencido": 90,
+    "servicio": "Paquete Triple Play (TV + Internet + Telefonía)",
+    "pais": "Panamá",
+    "fecha_vencimiento": "2026-03-23",
+    "segmento_riesgo": "ALTO",
+    "perfil_test": "Caso Complejo (Pide Condonación)"
+  },
+  "+50799999999": {
+    "nombre": "Ana Sánchez",
+    "deuda_usd": 25.00,
+    "dias_vencido": 5,
+    "servicio": "Internet 50 Mbps",
+    "pais": "Panamá",
+    "fecha_vencimiento": "2026-06-16",
+    "segmento_riesgo": "BAJO",
+    "perfil_test": "Caso Olvidadizo (Pago Inmediato)"
+  },
+  "+50766666666": {
+    "nombre": "Roberto Castillo",
+    "deuda_usd": 320.00,
+    "dias_vencido": 62,
+    "servicio": "Internet 200 Mbps + TV",
+    "pais": "Panamá",
+    "fecha_vencimiento": "2026-04-20",
+    "segmento_riesgo": "ALTO",
+    "perfil_test": "Caso Alto Riesgo (Últimas Cuotas)"
+  }
+}

@@ -1,0 +1,24 @@
+# Entorno virtual
+estebantest/
+
+# Python
+__pycache__/
+*.pyc
+*.pyo
+.pytest_cache/
+
+# Claude Code
+.claude/
+
+# Variables de entorno
+.env
+*.env
+
+# macOS
+.DS_Store
+
+# Documento confidencial del assessment (material propietario de LLA)
+doc/lla_candidato_assessment.pdf
+
+# Logs
+*.log
