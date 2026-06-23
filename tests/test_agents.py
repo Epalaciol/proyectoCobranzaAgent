@@ -2,8 +2,10 @@
 Tests unitarios para el sistema Multi-Agente LLA.
 
 Cómo ejecutar:
-    source estebantest/bin/activate
     pytest tests/ -v
+
+Los tests no requieren Ollama corriendo — todas las dependencias de
+LangChain se mockean al importar `multi_agent`.
 """
 
 import pytest
@@ -52,6 +54,7 @@ with patch.dict("sys.modules", _fake_modules):
         escalar_a_humano,
         limpiar_marcas,
         detectar_nueva_fase,
+        clasificar_opt_out,
         TOOL_MAP,
         tools,
         FASE_VALIDAR,
@@ -267,3 +270,35 @@ class TestConfiguracionSistema:
         assert FASE_NEGOCIAR == "NEGOCIADOR"
         assert FASE_REGISTRAR == "REGISTRADOR"
         assert FASE_CERRAR == "CERRAR"
+
+
+# ==========================================
+# TESTS: clasificar_opt_out (4 categorías)
+# ==========================================
+
+class TestClasificarOptOut:
+
+    def test_opt_out_stop(self):
+        assert clasificar_opt_out("STOP") == "OPT_OUT"
+        assert clasificar_opt_out("alto por favor") == "OPT_OUT"
+
+    def test_exclusion_permanente_prioridad(self):
+        # "nunca más" tiene precedencia sobre "no me contactes"
+        assert clasificar_opt_out("NUNCA MÁS me contacten") == "EXCLUSION_PERMANENTE"
+        assert clasificar_opt_out("elimíname de su lista") == "EXCLUSION_PERMANENTE"
+
+    def test_escalar_humano(self):
+        assert clasificar_opt_out("quiero un asesor") == "ESCALAR_HUMANO"
+        assert clasificar_opt_out("hablar con alguien por favor") == "ESCALAR_HUMANO"
+
+    def test_follow_up(self):
+        assert clasificar_opt_out("ahora no, más tarde") == "FOLLOW_UP"
+        assert clasificar_opt_out("mañana te respondo") == "FOLLOW_UP"
+
+    def test_mensaje_normal_no_clasifica(self):
+        assert clasificar_opt_out("sí, puedo pagar el viernes") is None
+        assert clasificar_opt_out("hola buenos días") is None
+
+    def test_case_insensitive(self):
+        assert clasificar_opt_out("Stop") == "OPT_OUT"
+        assert clasificar_opt_out("PERSONA") == "ESCALAR_HUMANO"

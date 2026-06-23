@@ -3,7 +3,7 @@
 [![Python 3.10+](https://img.shields.io/badge/Python-3.10+-blue?logo=python&logoColor=white)](https://python.org)
 [![LangChain](https://img.shields.io/badge/LangChain-0.3-1C3C3C)](https://langchain.com)
 [![Ollama](https://img.shields.io/badge/Ollama-Llama_3.1-000000)](https://ollama.com)
-[![Tests](https://img.shields.io/badge/Tests-30_passing-brightgreen)](tests/)
+[![Tests](https://img.shields.io/badge/Tests-36_passing-brightgreen)](tests/test_agents.py)
 
 Sistema multi-agente de IA para gestión de cobranza vía WhatsApp. Arquitectura serverless 100% en AWS.
 
@@ -40,7 +40,7 @@ Abre `http://localhost:8501`. Si ves `[Errno 61] Connection refused`, ejecuta `o
 No requieren Ollama.
 
 ```bash
-pytest tests/ -v   # 14 tests passing
+pytest tests/ -v   # 36 tests
 ```
 
 ## Estructura
@@ -53,7 +53,7 @@ llaTechAssesment/
 ├── mock_data.json      # 5 perfiles de cliente para pruebas
 ├── requirements.txt
 ├── tests/
-│   └── test_agents.py  # 14 tests unitarios
+│   └── test_agents.py  # 36 tests unitarios
 ├── doc/
 │   └── arquitectura_aws.md   # Diseño técnico completo
 └── docs/

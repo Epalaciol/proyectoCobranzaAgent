@@ -31,7 +31,11 @@ logger = logging.getLogger(__name__)
 # ==========================================
 
 MAX_INPUT_LENGTH = 600      # caracteres máximos por mensaje
-MAX_TURNS_PER_SESSION = 25  # turnos máximos antes de cerrar la sesión
+# Alineado con doc/arquitectura_aws.md §3 — 35 turnos calibrados para el
+# cliente latinoamericano (tiende a la evasión y al diálogo extenso). En
+# producción este valor se lee de AppConfig (clave `max_turnos_sesion`) y se
+# ajusta sin redespliegue.
+MAX_TURNS_PER_SESSION = int(os.getenv("MAX_TURNS_PER_SESSION", "35"))
 
 # Palabras clave que indican intento de desviar al agente de su propósito
 _PATRONES_OFFTOPIC = [
@@ -74,6 +78,55 @@ def validar_input(texto: str, turno_actual: int) -> tuple[bool, str]:
             )
 
     return True, ""
+
+
+# ==========================================
+# CLASIFICACIÓN DE OPT-OUT (4 categorías)
+# ==========================================
+# Alineado con doc/arquitectura_aws.md §3 — "Gestión de opt-out en español".
+# Se ejecuta ANTES del LLM como segunda capa de seguridad (la primera es
+# `validar_input` para prompt injection). En producción AWS vive en el
+# Agent Lambda, al inicio del path crítico, y comparte el mismo diccionario
+# de patrones vía AppConfig.
+
+_OPT_OUT_PATRONES = {
+    # Exclusión permanente — el agente NO modifica listas, solo registra
+    # el ticket y escala al área de gestión de clientes.
+    "EXCLUSION_PERMANENTE": [
+        "nunca mas", "nunca más", "elimíname", "elimíname",
+        "elimineme", "quítenme", "quitenme", "no me contactes mas",
+        "no me contactes más", "borrenme", "bórrenme",
+    ],
+    # Opt-out de la campaña activa — suspensión 30 días (Ley 306/2026).
+    "OPT_OUT": [
+        "stop", "alto", "para", "detener", "no me contactes", "no contacten",
+    ],
+    # El cliente quiere humano — escalamiento inmediato con contexto.
+    "ESCALAR_HUMANO": [
+        "agente", "persona", "ejecutivo", "asesor", "humano",
+        "hablar con alguien", "quiero un humano", "habla con alguien",
+    ],
+    # Re-agendar dentro de franja horaria permitida.
+    "FOLLOW_UP": [
+        "no ahora", "despues", "después", "mas tarde", "más tarde",
+        "mañana", "manana", "en otro momento", "luego",
+    ],
+}
+
+
+def clasificar_opt_out(texto: str) -> Optional[str]:
+    """
+    Devuelve la categoría de opt-out detectada, o None si el mensaje no
+    califica. Orden de prioridad: EXCLUSION_PERMANENTE > ESCALAR_HUMANO >
+    OPT_OUT > FOLLOW_UP — del compromiso legal más fuerte al más leve.
+    """
+    t = texto.strip().lower()
+    for categoria in ("EXCLUSION_PERMANENTE", "ESCALAR_HUMANO", "OPT_OUT", "FOLLOW_UP"):
+        for patron in _OPT_OUT_PATRONES[categoria]:
+            if patron in t:
+                logger.info("Opt-out detectado: categoria=%s patron='%s'", categoria, patron)
+                return categoria
+    return None
 
 
 # ==========================================
@@ -183,6 +236,12 @@ try:
         [registrar_promesa_pago]
     )
     llm_cierre = ChatOllama(model=MODEL_NAME, temperature=0.4)
+    # En producción AWS, el Supervisor NO es un LLM call — es Bedrock
+    # Guardrails aplicado en la propia invocación del agente activo
+    # (bedrock:ApplyGuardrail). Aquí usamos un LLM local porque Ollama no
+    # tiene equivalente nativo; el contrato (APROBADO / RECHAZADO + razón)
+    # se mantiene idéntico, por lo que la lógica de orquestación no cambia
+    # al migrar a producción.
     supervisor_llm = ChatOllama(model=MODEL_NAME, temperature=0.0)
 
     logger.info("Agentes inicializados correctamente (modelo: %s).", MODEL_NAME)

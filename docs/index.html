@@ -69,6 +69,22 @@
         Un sistema de agentes de IA que gestiona la cobranza vía WhatsApp de forma empática,
         legal y escalable — y transfiere al asesor humano exactamente cuando importa.
       </p>
+
+      <!-- Gancho cuantificado: 3 números que el comité necesita oír primero -->
+      <div class="mt-10 grid grid-cols-3 gap-3 md:gap-6 max-w-3xl mx-auto">
+        <div class="bg-green-50 border border-green-200 rounded-xl p-4">
+          <div class="text-3xl md:text-4xl font-extrabold text-green-700">80%</div>
+          <div class="text-xs text-gray-600 mt-1 font-medium">menos costo<br/>operativo</div>
+        </div>
+        <div class="bg-blue-50 border border-blue-200 rounded-xl p-4">
+          <div class="text-3xl md:text-4xl font-extrabold text-blue-700">+$90k</div>
+          <div class="text-xs text-gray-600 mt-1 font-medium">recuperación adicional<br/>por campaña de $500k</div>
+        </div>
+        <div class="bg-yellow-50 border border-yellow-200 rounded-xl p-4">
+          <div class="text-3xl md:text-4xl font-extrabold text-yellow-700">$21<span class="text-base text-gray-500">/mes</span></div>
+          <div class="text-xs text-gray-600 mt-1 font-medium">infraestructura para<br/>10k conversaciones</div>
+        </div>
+      </div>
       <div class="mt-8 flex flex-wrap justify-center gap-4">
         <a href="https://github.com/Epalaciol/proyectoCobranzaAgent"
            target="_blank"
@@ -243,6 +259,88 @@
           <p class="text-xs text-gray-600 mb-3">Confirma el acuerdo, agradece al cliente y cierra la sesión de forma empática. Agenda el seguimiento si corresponde.</p>
           <div class="text-xs text-gray-400 font-mono">modelo: Amazon Nova Lite</div>
           <div class="text-xs text-gray-400">generación de texto simple</div>
+        </div>
+      </div>
+
+      <!-- ═══════════════════════════════════════ -->
+      <!-- MOMENTO AHA: TRANSCRIPT REAL ANOTADO    -->
+      <!-- ═══════════════════════════════════════ -->
+      <div class="bg-gradient-to-br from-indigo-50 to-white rounded-xl border-2 border-indigo-200 p-6 mb-6">
+        <div class="flex items-center gap-2 mb-2">
+          <span class="bg-indigo-600 text-white text-xs font-bold px-3 py-1 rounded-full">EJEMPLO</span>
+          <span class="font-bold text-indigo-900 text-sm">Una conversación real — cómo el agente lee entre líneas</span>
+        </div>
+        <p class="text-sm text-gray-600 mb-5">Carlos tiene $800 en mora hace 75 días — perfil ALTO. Lo que parece un rechazo es en realidad una oportunidad de re-anclaje.</p>
+
+        <div class="space-y-3 max-w-xl">
+          <!-- Turno 1 -->
+          <div class="flex gap-3">
+            <div class="bg-gray-200 rounded-lg px-3 py-2 text-sm text-gray-800 max-w-md">
+              Hola Carlos 👋 Te saludamos de LLA. Tenés un saldo pendiente de $800 con fecha del 7 de abril. ¿Podemos ayudarte a regularizarlo hoy?
+            </div>
+          </div>
+          <div class="flex justify-end gap-3">
+            <div class="bg-green-100 rounded-lg px-3 py-2 text-sm text-gray-800 max-w-md">
+              no puedo, ya déjenme en paz
+            </div>
+          </div>
+          <div class="bg-indigo-50 border border-indigo-200 rounded-lg p-3 text-xs">
+            <strong class="text-indigo-700">🧠 El agente detecta:</strong>
+            <span class="text-gray-700">tono de frustración, pero no es opt-out explícito ("STOP"). El perfil ALTO sugiere ya hubo intentos previos. <strong>No insiste con la oferta</strong> — primero valida la situación emocional.</span>
+          </div>
+
+          <!-- Turno 2 -->
+          <div class="flex gap-3">
+            <div class="bg-gray-200 rounded-lg px-3 py-2 text-sm text-gray-800 max-w-md">
+              Entiendo Carlos 🙏 No queremos presionarte. Sabemos que a veces las cosas se complican. ¿Querés que veamos juntos una opción que se adapte a tu situación, o preferís que te contactemos en otro momento?
+            </div>
+          </div>
+          <div class="flex justify-end gap-3">
+            <div class="bg-green-100 rounded-lg px-3 py-2 text-sm text-gray-800 max-w-md">
+              es que perdí mi trabajo el mes pasado, no tengo ni para la luz
+            </div>
+          </div>
+          <div class="bg-indigo-50 border border-indigo-200 rounded-lg p-3 text-xs">
+            <strong class="text-indigo-700">🧠 El agente detecta:</strong>
+            <span class="text-gray-700">contexto de dificultad real (no evasión). <strong>Salta el paso 1 y 2</strong> (pago total / 2 cuotas) — sería insensible. Va directo a opción más flexible y reconoce primero.</span>
+          </div>
+
+          <!-- Turno 3 -->
+          <div class="flex gap-3">
+            <div class="bg-gray-200 rounded-lg px-3 py-2 text-sm text-gray-800 max-w-md">
+              Lo siento mucho Carlos, gracias por contarme 🙏 Hagamos esto: cuando puedas hacer aunque sea un pago parcial — el monto y la fecha que vos elijas — registramos el compromiso y evitamos la suspensión del servicio. ¿Te sirve fijar una fecha tentativa? Sin presión.
+            </div>
+          </div>
+          <div class="flex justify-end gap-3">
+            <div class="bg-green-100 rounded-lg px-3 py-2 text-sm text-gray-800 max-w-md">
+              uff... talvez el 30, cobro algo pequeño ese día
+            </div>
+          </div>
+          <div class="bg-indigo-50 border border-indigo-200 rounded-lg p-3 text-xs">
+            <strong class="text-indigo-700">🧠 El agente detecta:</strong>
+            <span class="text-gray-700">apertura. Calcula la fecha exacta ("el 30" + mes actual) sin regla hardcodeada. Pide confirmación de monto antes de invocar <code class="bg-gray-100 px-1 rounded">registrar_promesa_pago</code>.</span>
+          </div>
+
+          <!-- Turno 4 -->
+          <div class="flex gap-3">
+            <div class="bg-gray-200 rounded-lg px-3 py-2 text-sm text-gray-800 max-w-md">
+              ¡Perfecto Carlos! 👍 ¿Cuánto podrías abonar el 30 de junio? Aunque sean $50 ya nos sirve para registrar el compromiso.
+            </div>
+          </div>
+          <div class="flex justify-end gap-3">
+            <div class="bg-green-100 rounded-lg px-3 py-2 text-sm text-gray-800 max-w-md">
+              dale, $80
+            </div>
+          </div>
+          <div class="flex gap-3">
+            <div class="bg-gray-200 rounded-lg px-3 py-2 text-sm text-gray-800 max-w-md">
+              Listo Carlos 🎉 Quedó registrado tu compromiso de $80 para el 30/06/2026. Un día antes te enviamos un recordatorio. Gracias por la confianza y mucho ánimo con todo. 🙏
+            </div>
+          </div>
+          <div class="bg-green-50 border border-green-200 rounded-lg p-3 text-xs">
+            <strong class="text-green-700">✅ Resultado:</strong>
+            <span class="text-gray-700">promesa registrada en CRM ($80 / 30-06), perfil del cliente actualizado con flag <code class="bg-gray-100 px-1 rounded">situacion_dificultad: true</code>. <strong>Un árbol de decisiones habría escalado al humano en el turno 1</strong> ("no puedo") o habría insistido robóticamente con $800 — ambos pierden el cliente.</span>
+          </div>
         </div>
       </div>
 
@@ -895,6 +993,28 @@
         </div>
 
         <div class="bg-white rounded-xl border border-gray-200 p-6">
+          <h3 class="font-bold text-gray-900 mb-4">📱 Restricciones del canal WhatsApp (Meta)</h3>
+          <div class="space-y-3 text-sm">
+            <div class="flex items-start gap-2">
+              <span class="text-blue-500 font-bold mt-0.5">▸</span>
+              <div><strong>Templates HSM obligatorias para outbound:</strong> El primer mensaje a un cliente debe usar una plantilla pre-aprobada por Meta (categoría UTILITY). El LLM solo entra cuando el cliente responde. LLA mantiene un catálogo de HSMs por segmento de riesgo, versionadas y aprobadas.</div>
+            </div>
+            <div class="flex items-start gap-2">
+              <span class="text-blue-500 font-bold mt-0.5">▸</span>
+              <div><strong>Ventana de servicio de 24h:</strong> Tras la última respuesta del cliente, hay 24h para enviar texto libre. Después, solo HSMs nuevamente. EventBridge Scheduler agenda follow-ups dentro de la ventana cuando es posible (más barato).</div>
+            </div>
+            <div class="flex items-start gap-2">
+              <span class="text-blue-500 font-bold mt-0.5">▸</span>
+              <div><strong>Calidad del número (quality rating):</strong> Si el block rate sube, Meta degrada el tier y limita el envío. Métrica custom <code class="bg-gray-100 px-1 rounded text-xs">whatsapp.quality_rating</code> alarmada en CloudWatch — pausa campañas automáticamente si entra en YELLOW.</div>
+            </div>
+            <div class="flex items-start gap-2">
+              <span class="text-blue-500 font-bold mt-0.5">▸</span>
+              <div><strong>Tier requerido:</strong> Tier 3 (100K conversaciones únicas / 24h) o Tier 4 (ilimitado) para operación masiva. Confirmado con Meta como prerrequisito de go-live.</div>
+            </div>
+          </div>
+        </div>
+
+        <div class="bg-white rounded-xl border border-gray-200 p-6">
           <h3 class="font-bold text-gray-900 mb-4">⚖️ Consideraciones Legales (Panamá)</h3>
           <div class="space-y-3 text-sm">
             <div class="flex items-start gap-2">
@@ -927,6 +1047,10 @@
             </div>
             <div class="flex items-start gap-2">
               <span class="text-yellow-500 font-bold mt-0.5">▸</span>
+              <div><strong>Habeas data (Ley 81 de 2019):</strong> Derechos ARCO operativos: acceso, rectificación, cancelación y oposición. Bedrock Guardrails enmascara PII adicional (cédula, tarjeta) en el input antes de persistir. Aviso de tratamiento automatizado al inicio de cada sesión. Retención: 90 días hot en S3, 5 años en Glacier con Object Lock (norma ACODECO sobre operaciones de crédito).</div>
+            </div>
+            <div class="flex items-start gap-2">
+              <span class="text-yellow-500 font-bold mt-0.5">▸</span>
               <div><strong>Auditoría:</strong> Cada mensaje queda en S3 con timestamp. 90 días en hot storage, luego Glacier para cumplimiento regulatorio.</div>
             </div>
             <div class="flex items-start gap-2">
@@ -935,6 +1059,13 @@
             </div>
           </div>
         </div>
+      </div>
+
+      <!-- Pointer a MD: matriz de riesgos + evaluación + RACI -->
+      <div class="bg-gray-900 text-gray-200 rounded-xl p-5 text-sm">
+        <div class="font-bold text-white mb-2">📑 Documentos técnicos complementarios</div>
+        <div class="text-gray-400 mb-3">El diseño técnico detallado (matriz de riesgos consolidada, roadmap de evaluación del agente, modelo operativo RACI, diagrama de secuencia outbound) vive en el documento técnico para no duplicar contenido aquí:</div>
+        <a href="../doc/arquitectura_aws.md" class="inline-block bg-white text-gray-900 rounded-lg px-4 py-2 font-bold hover:bg-gray-100 transition text-xs">→ Ver doc/arquitectura_aws.md (§9 Riesgos · §11 Eval · §12 RACI)</a>
       </div>
     </section>
 
@@ -1016,92 +1147,37 @@
         Este sistema de cobranza es el primer módulo de un framework mayor. El siguiente paso es un <strong>Resolver Inteligente</strong> que recibe cualquier mensaje de un cliente y decide a qué agente especializado enviarlo — sin que el cliente tenga que saber con quién hablar.
       </p>
 
-      <div class="bg-white rounded-xl border border-gray-200 p-6 mb-6">
-        <h3 class="font-bold text-gray-900 mb-4">Arquitectura de la Plataforma CX Multi-Agente</h3>
-        <pre class="text-xs"><code>
-  Cliente WhatsApp (mensaje libre)
-            │
-            ▼
-  ┌─────────────────────────────────────────────────────────────┐
-  │                   CX RESOLVER (Agente Orquestador)          │
-  │                                                             │
-  │  Función: Clasificar la intención del cliente y enrutar     │
-  │  al framework especializado correcto.                       │
-  │                                                             │
-  │  Contexto disponible:                                       │
-  │  · Perfil del cliente (CRM)                                 │
-  │  · Historial de interacciones previas (S3)                  │
-  │  · Estado del servicio (tiene mora? tiene ticket abierto?)  │
-  │  · Campañas activas aplicables al cliente                   │
-  └──────────────┬──────────────────────────────────────────────┘
-                 │  (clasificación de intención)
-       ┌─────────┼─────────┬─────────────┬─────────────┐
-       ▼         ▼         ▼             ▼             ▼
-  ┌────────┐ ┌───────┐ ┌────────┐ ┌──────────┐ ┌──────────┐
-  │Cobranza│ │Ventas │ │Soporte │ │Operación/│ │Campañas  │
-  │ Agent  │ │ Agent │ │  Tech  │ │  Fallas  │ │  Agent   │
-  │        │ │       │ │ Agent  │ │  Agent   │ │          │
-  │← Este  │ │Mejora │ │Guía de │ │Estado de │ │Promos y  │
-  │proyecto│ │de plan│ │config. │ │la red,   │ │ofertas   │
-  │        │ │Nuevos │ │Router  │ │tickets   │ │activas   │
-  │        │ │serv.  │ │WiFi    │ │de falla  │ │          │
-  └────────┘ └───────┘ └────────┘ └──────────┘ └──────────┘
-       │         │         │             │             │
-       └─────────┴─────────┴─────────────┴─────────────┘
-                           │
-                ┌──────────▼──────────┐
-                │  CAPA COMPARTIDA    │
-                │  · Guardrails       │
-                │  · Perfil cliente   │
-                │  · Historial unif.  │
-                │  · Escalamiento     │
-                └─────────────────────┘
-        </code></pre>
-      </div>
-
       <div class="grid md:grid-cols-2 gap-6">
         <div class="bg-white rounded-xl border border-gray-200 p-6">
-          <h3 class="font-bold text-gray-900 mb-4">¿Qué gana LLA con esta arquitectura?</h3>
-          <ul class="space-y-2 text-sm text-gray-700">
-            <li class="flex items-start gap-2"><span class="text-purple-500 mt-0.5">▸</span><div><strong>Un solo punto de contacto para el cliente:</strong> El cliente no necesita saber que hay múltiples sistemas — escribe naturalmente y el Resolver lo dirige.</div></li>
-            <li class="flex items-start gap-2"><span class="text-purple-500 mt-0.5">▸</span><div><strong>Contexto persistente entre dominios:</strong> Si el cliente tiene una falla de red Y una deuda, ambos agentes trabajan con el mismo perfil y no preguntan lo mismo dos veces.</div></li>
-            <li class="flex items-start gap-2"><span class="text-purple-500 mt-0.5">▸</span><div><strong>Cada módulo es independiente:</strong> El equipo de Ventas puede mejorar su agente sin afectar Cobranza. Cada módulo tiene su propio ciclo de mejora.</div></li>
-            <li class="flex items-start gap-2"><span class="text-purple-500 mt-0.5">▸</span><div><strong>Escalamiento inteligente:</strong> El Resolver sabe que si un cliente tiene un ticket de falla abierto, no es el momento de contactarlo por deuda.</div></li>
-          </ul>
+          <h3 class="font-bold text-gray-900 mb-4">Hoja de ruta</h3>
+          <div class="space-y-3 text-sm">
+            <div class="flex items-start gap-3">
+              <div class="w-7 h-7 rounded-full bg-green-100 text-green-700 text-xs font-bold flex items-center justify-center shrink-0">✓</div>
+              <div><strong class="text-gray-800">Fase 1 (Actual):</strong> <span class="text-gray-500">Agente de Cobranza — 4 agentes especializados sobre AWS serverless.</span></div>
+            </div>
+            <div class="flex items-start gap-3">
+              <div class="w-7 h-7 rounded-full bg-blue-100 text-blue-700 text-xs font-bold flex items-center justify-center shrink-0">2</div>
+              <div><strong class="text-gray-800">Fase 2:</strong> <span class="text-gray-500">Capa de perfil unificado y memoria compartida entre módulos.</span></div>
+            </div>
+            <div class="flex items-start gap-3">
+              <div class="w-7 h-7 rounded-full bg-purple-100 text-purple-700 text-xs font-bold flex items-center justify-center shrink-0">3</div>
+              <div><strong class="text-gray-800">Fase 3:</strong> <span class="text-gray-500"><strong>CX Resolver</strong> — clasifica intención del cliente y enruta al agente correcto (Cobranza, Ventas, Soporte, Operaciones).</span></div>
+            </div>
+            <div class="flex items-start gap-3">
+              <div class="w-7 h-7 rounded-full bg-gray-100 text-gray-700 text-xs font-bold flex items-center justify-center shrink-0">4</div>
+              <div><strong class="text-gray-800">Fase 4:</strong> <span class="text-gray-500">Módulos adicionales sobre la misma plataforma — cada uno con ciclo de mejora independiente.</span></div>
+            </div>
+          </div>
         </div>
 
         <div class="bg-white rounded-xl border border-gray-200 p-6">
-          <h3 class="font-bold text-gray-900 mb-4">Hoja de ruta de implementación</h3>
-          <div class="space-y-3">
-            <div class="flex items-start gap-3">
-              <div class="w-8 h-8 rounded-full bg-green-100 text-green-700 text-xs font-bold flex items-center justify-center shrink-0">✓</div>
-              <div class="text-sm">
-                <div class="font-bold text-gray-800">Fase 1 (Actual): Agente de Cobranza</div>
-                <div class="text-gray-500">MVP funcional con los 4 agentes especializados</div>
-              </div>
-            </div>
-            <div class="flex items-start gap-3">
-              <div class="w-8 h-8 rounded-full bg-blue-100 text-blue-700 text-xs font-bold flex items-center justify-center shrink-0">2</div>
-              <div class="text-sm">
-                <div class="font-bold text-gray-800">Fase 2: Perfil unificado del cliente</div>
-                <div class="text-gray-500">Capa compartida de historial y contexto entre agentes</div>
-              </div>
-            </div>
-            <div class="flex items-start gap-3">
-              <div class="w-8 h-8 rounded-full bg-purple-100 text-purple-700 text-xs font-bold flex items-center justify-center shrink-0">3</div>
-              <div class="text-sm">
-                <div class="font-bold text-gray-800">Fase 3: CX Resolver</div>
-                <div class="text-gray-500">Orquestador que clasifica intención y enruta entre módulos</div>
-              </div>
-            </div>
-            <div class="flex items-start gap-3">
-              <div class="w-8 h-8 rounded-full bg-gray-100 text-gray-700 text-xs font-bold flex items-center justify-center shrink-0">4</div>
-              <div class="text-sm">
-                <div class="font-bold text-gray-800">Fase 4: Módulos adicionales</div>
-                <div class="text-gray-500">Ventas, Soporte Técnico, Operaciones — cada uno con su propio stack de agentes</div>
-              </div>
-            </div>
-          </div>
+          <h3 class="font-bold text-gray-900 mb-4">¿Por qué importa para LLA?</h3>
+          <ul class="space-y-2 text-sm text-gray-700">
+            <li class="flex items-start gap-2"><span class="text-purple-500 mt-0.5">▸</span><strong>Un solo canal para el cliente:</strong> escribe naturalmente, el sistema lo enruta.</li>
+            <li class="flex items-start gap-2"><span class="text-purple-500 mt-0.5">▸</span><strong>Contexto entre dominios:</strong> si tiene falla de red Y deuda, ambos agentes lo saben.</li>
+            <li class="flex items-start gap-2"><span class="text-purple-500 mt-0.5">▸</span><strong>Inversión re-utilizable:</strong> Guardrails, perfil y observabilidad se construyen una vez.</li>
+            <li class="flex items-start gap-2"><span class="text-purple-500 mt-0.5">▸</span><strong>Escalamiento inteligente:</strong> el Resolver no te llama por deuda si tienes ticket de falla abierto.</li>
+          </ul>
         </div>
       </div>
     </section>

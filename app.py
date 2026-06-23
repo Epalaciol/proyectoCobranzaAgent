@@ -152,15 +152,35 @@ else:
         user_input = st.chat_input("Escribí un mensaje...", key="wa_input")
 
         if user_input:
-            # Opt-out
-            if user_input.strip().upper() == "STOP":
+            # Opt-out / re-enrutamiento — 4 categorías alineadas con
+            # doc/arquitectura_aws.md §3 ("Gestión de opt-out en español").
+            # En producción esta detección vive antes del LLM (Lambda)
+            # como segunda capa de seguridad.
+            categoria = multi_agent.clasificar_opt_out(user_input)
+            if categoria:
+                respuestas = {
+                    "OPT_OUT": (
+                        "Entendido 🙏 No te enviaremos más mensajes en esta campaña "
+                        "durante los próximos 30 días. Cuando quieras regularizar tu "
+                        "cuenta podés ir a https://pagos.lla.com/linea ¡Hasta pronto!"
+                    ),
+                    "EXCLUSION_PERMANENTE": (
+                        "Entendido. Tu solicitud de exclusión de nuestras listas de "
+                        "contacto fue registrada y será procesada por el área "
+                        "correspondiente. No te contactaremos nuevamente por esta vía. 🙏"
+                    ),
+                    "FOLLOW_UP": (
+                        "Sin problema 😊 Te contactamos en otro momento dentro del "
+                        "horario permitido. Mientras tanto, podés pagar cuando gustes "
+                        "en https://pagos.lla.com/linea"
+                    ),
+                    "ESCALAR_HUMANO": (
+                        "Por supuesto 🙏 Te transferimos con un asesor. En breve se "
+                        "comunicarán contigo con todo el contexto de esta conversación."
+                    ),
+                }
                 st.session_state.messages.append({"role": "user", "text": user_input, "ts": _ts()})
-                bye = (
-                    "Entendido 🙏 No te enviaremos más mensajes. "
-                    "Cuando quieras regularizar tu cuenta podés ir a "
-                    "https://pagos.lla.com/linea ¡Hasta pronto!"
-                )
-                st.session_state.messages.append({"role": "bot", "text": bye, "ts": _ts()})
+                st.session_state.messages.append({"role": "bot", "text": respuestas[categoria], "ts": _ts()})
                 st.session_state.chat_active = False
                 chat_slot.markdown(_render_chat(), unsafe_allow_html=True)
                 st.rerun()

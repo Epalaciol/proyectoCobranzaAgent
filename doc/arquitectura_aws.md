@@ -10,24 +10,92 @@ Este documento es la referencia técnica de implementación. La narrativa de neg
 
 ## 0. Supuestos Declarados
 
-| Supuesto | Impacto en diseño | Plan alternativo |
-|---|---|---|
-| Billing API accesible desde VPC vía REST/gRPC | El Agent Lambda llama directamente a la API | Integración batch vía S3 + Glue; saldo con latencia de 24h |
-| CRM con escritura vía API REST o SDK | Registro automático de promesas en tiempo real | Cola SQS + worker batch que escribe vía SFTP/archivo |
-| Meta Business API habilitada para número LLA | Canal WhatsApp operativo | Proceso no técnico — aprobación Meta puede tomar semanas |
-| Historial de promesas incumplidas en CRM | Perfil de riesgo usa 3 señales desde el inicio | Primera campaña usa solo días de mora y monto; perfil aprende |
-| Volumen de morosos simultáneos < 100,000 | SQS FIFO a 300 TPS es suficiente | Migrar a Kinesis Data Streams para >1M simultáneos |
-| Consentimiento de contacto incluido en contrato | Permite contacto outbound sin opt-in adicional | Campaña de opt-in previa al lanzamiento |
-| **Todos los clientes cargados en una campaña son aptos para ser contactados** | El agente podría intentar contactar a clientes con opt-out activo, en lista negra o con restricción legal vigente | La elegibilidad de contacto se valida en el proceso que genera el archivo de campaña (antes de que el agente exista). El agente no valida esta condición — la asume garantizada por quien cargó la campaña |
-| LLA dispone de un área de riesgo que clasifica a los clientes | Sin perfil externo, el agente aplica la fórmula interna como fallback | Usar la clasificación interna (días de mora + monto + promesas incumplidas) como proxy hasta que el área de riesgo provea el dato |
-| Latencia Bedrock (Claude 3.5 Haiku) < 3s | Margen para lograr p95 < 5s incluyendo tools | Circuit breaker con mensaje de "procesando" + respuesta asíncrona |
-| Reglas de negocio cambian semanalmente, no en tiempo real | AppConfig con caché de 60s es adecuado | Reducir TTL a 5s si se requiere actualización más frecuente |
+Los supuestos están agrupados por dominio. Los marcados como **🚩 riesgo alto** son los que más impacto tendrían si no se cumplen — se validan antes del kickoff técnico.
 
-**Nota sobre bases de datos de LLA:** Este diseño no asume tecnología específica (PostgreSQL, Oracle, Cassandra, etc.) para los sistemas core de LLA. La integración es siempre vía API — la tecnología subyacente del sistema de facturación o CRM es irrelevante mientras la API sea accesible desde la VPC.
+### 0.1 Integración con sistemas existentes
+
+| Supuesto | Impacto si no se cumple | Plan alternativo |
+|---|---|---|
+| Billing expone API REST/gRPC accesible desde VPC, con campos `saldo_vencido`, `dias_vencido`, `fecha_vencimiento` | Sin saldo en tiempo real, la conversación pierde precisión | Integración batch vía S3 + Glue; saldo con latencia de 24h (degrada experiencia pero mantiene el caso de uso) |
+| CRM soporta escritura vía API REST/SDK a endpoints específicos (`promesas`, `tickets_escalamiento`) | No se pueden registrar acuerdos automáticamente | Cola SQS + worker batch que escribe en lote vía SFTP/archivo |
+| LLA dispone de un área de riesgo (o equivalente) que clasifica clientes en BAJO/MEDIO/ALTO y expone el campo vía API | El agente aplica la fórmula interna como fallback | Usar fallback (días de mora + monto + promesas incumplidas) hasta que el área provea el dato |
+| Historial de promesas incumplidas existe en el CRM | El perfil de riesgo arranca con 2 señales en lugar de 3 | Primera campaña usa solo días de mora y monto; perfil se enriquece con cada interacción |
+| **🚩 Existe un gateway de pago (Worldpay, Stripe, gateway local) ya integrado al portal de LLA, con capacidad de generar links de pago únicos por cliente** | Sin gateway, el agente solo puede registrar promesas — no procesar pagos | El flujo "pago inmediato" se reemplaza por "redirección al portal/sucursal"; el agente sigue siendo útil pero pierde ~30% de la conversión esperada |
+| **🚩 El número WhatsApp en el CRM coincide con el número activo del titular** | Conversaciones con personas que ya no son el cliente; riesgo legal | El Validador (Agente 1) confirma identidad antes de revelar cualquier dato de cuenta — si rechaza, la sesión termina sin exposición de PII |
+
+### 0.2 Canal WhatsApp / Meta
+
+| Supuesto | Impacto si no se cumple | Plan alternativo |
+|---|---|---|
+| Meta Business API está habilitada para el número LLA y la cuenta tiene tier **Tier 2 o superior** (≥10K conversaciones únicas/24h) | Rate limit insuficiente para campañas masivas | Solicitar upgrade a Meta (semanas); fragmentar campañas en lotes diarios mientras tanto |
+| LLA cuenta con templates HSM pre-aprobadas por Meta para el primer mensaje outbound de cobranza (ver §1.2) | No se puede iniciar contacto outbound — Meta rechaza | Proceso no técnico — diseño y aprobación de templates con Meta (1–3 semanas) |
+| Calidad del número WhatsApp se mantiene en estado verde (low block rate) | Meta degrada el tier y limita el envío | Monitorear `phone_number_quality` vía Meta API; pausar campañas si baja a amarillo |
+
+### 0.3 Operación y negocio
+
+| Supuesto | Impacto si no se cumple | Plan alternativo |
+|---|---|---|
+| **Todos los clientes cargados en una campaña son aptos para ser contactados** (la elegibilidad — opt-out, lista negra, restricción legal — se valida en el proceso que genera el CSV, **antes** de que el agente exista) | El agente contactaría clientes excluidos, generando infracción regulatoria | El pipeline de generación de campañas hace cross-check contra la tabla `excluidos_canal` antes de escribir el CSV en S3. El agente asume elegibilidad — no la re-valida |
+| **🚩 Existe un equipo de asesores humanos disponible durante toda la franja horaria permitida (L–V 8–18h, Sáb 8–15h) para atender escalamientos** | Los casos escalados quedan en cola sin atención; la promesa "te contactará un asesor" se rompe | Definir SLA de atención por horario (turnos rotativos) o limitar la operación del agente a la franja en que el equipo está disponible |
+| El consentimiento de contacto por WhatsApp está cubierto en el contrato de servicio vigente — **pendiente de validación con el área legal de LLA antes del go-live** | Riesgo legal de contactar sin opt-in | Campaña de opt-in previa (SMS o email transaccional) + 2–3 semanas adicionales de timeline |
+| Idioma único: español neutro con modismos panameños permitidos | Clientes anglo en Panamá (~5% del mercado corporativo) reciben mensajes en español | Detección de idioma en turno 1 + segundo conjunto de prompts en inglés. Fuera de scope del MVP |
+
+### 0.4 Capacidad técnica
+
+| Supuesto | Impacto si no se cumple | Plan alternativo |
+|---|---|---|
+| Volumen pico (fin de mes) ≤ 5× el volumen promedio diario; volumen promedio ≤ 100K conversaciones/mes | SQS FIFO a 300 TPS por grupo es suficiente | Provisioned Concurrency en Lambda durante picos; migrar a Kinesis Data Streams si >1M simultáneos |
+| Latencia Bedrock (Claude 3.5 Haiku, us-east-1) p95 < 3s por invocación | El SLA end-to-end p95 < 5s no se cumple | Circuit breaker con mensaje de "estoy procesando tu solicitud" + respuesta asíncrona; considerar `claude-haiku-4-5` si la mejora de latencia justifica el costo |
+
+**Nota sobre bases de datos de LLA:** Este diseño no asume tecnología específica (PostgreSQL, Oracle, Cassandra, etc.) para los sistemas core. La integración es siempre vía API — la tecnología subyacente del sistema de facturación o CRM es irrelevante mientras la API sea accesible desde la VPC.
 
 ---
 
 ## 1. Arquitectura AWS
+
+### 1.0 Restricciones del canal WhatsApp (Meta) — críticas para el diseño
+
+Antes de hablar de servicios AWS, hay tres restricciones de Meta que condicionan toda la arquitectura. Ignorarlas hace que el sistema "funcione en demo" pero falle el día del lanzamiento.
+
+**a) Templates HSM (Highly Structured Messages) — obligatorias para outbound**
+
+Meta solo permite iniciar conversaciones outbound usando una plantilla pre-aprobada. El primer mensaje de cobranza **no puede ser texto libre generado por LLM**. La plantilla se aprueba con Meta una vez por categoría (`UTILITY` para cobranza) y se referencia por nombre.
+
+Implicación de diseño:
+- El paso ⑤ del flujo outbound (primer contacto) usa una HSM, no Bedrock. El LLM entra recién cuando el cliente responde.
+- Mantenemos un catálogo de 3–5 HSMs por segmento de riesgo (BAJO/MEDIO/ALTO), versionadas en S3.
+- Variables permitidas: nombre, monto, fecha vencimiento, link de pago. **No se puede personalizar el cuerpo del mensaje fuera de las variables aprobadas.**
+
+Ejemplo de HSM aprobada (categoría UTILITY):
+```
+Hola {{1}}, te saludamos de Liberty Latin America. Tenés un saldo de
+${{2}} con vencimiento al {{3}}. Podés regularizarlo en {{4}} o
+responder a este mensaje para conocer opciones de pago. 🙏
+```
+
+**b) Ventana de servicio de 24 horas**
+
+Tras el último mensaje del cliente, Meta abre una ventana de 24h en la que se puede responder con texto libre (cualquier cosa que el LLM genere). Pasada la ventana, **solo se permite enviar HSMs nuevamente** — y solo de categoría aprobada.
+
+Implicación de diseño:
+- `DynamoDB.Session.LastInboundTime` se compara contra `now()` en cada turno.
+- Si la ventana expiró y el agente necesita re-engagement (ej: follow-up de promesa de pago), se envía una HSM categorizada (`MARKETING` u `UTILITY` según el caso) — no texto libre.
+- EventBridge Scheduler agenda follow-ups dentro de la ventana de 24h cuando es posible para minimizar costo (las HSMs cuestan más que mensajes de sesión).
+
+**c) Calidad del número y rate limits por tier**
+
+Meta clasifica los números WhatsApp Business en tiers según calidad y volumen probado:
+- **Tier 1**: 1K conversaciones únicas / 24h
+- **Tier 2**: 10K / 24h
+- **Tier 3**: 100K / 24h
+- **Tier 4**: ilimitado
+
+Si el `block_rate` o el `report_rate` sube, Meta degrada el tier. Si baja a estado **rojo** (`flagged`), suspende el envío. Para una operación masiva LLA necesita Tier 3 o 4, y debe mantener la calidad del número en verde — lo cual depende directamente de **cuán bien recibido sea el agente**. Las métricas de bloqueo del agente son un KPI técnico, no solo de UX.
+
+Implicación de diseño:
+- CloudWatch métrica custom `lla.whatsapp.quality_rating` con alarma si baja de `GREEN`.
+- Si entra en `YELLOW`, Step Functions pausa nuevas campañas automáticamente y notifica al supervisor.
+- El supervisor revisa las últimas 50 conversaciones para identificar la causa raíz antes de reanudar.
 
 ### 1.1 Componentes y justificación
 
@@ -387,8 +455,164 @@ Costo ponderado real (80/20 split): ~$70,000/mes vs $350,000 sin IA — 80% de a
 
 ---
 
-## 8. Visión Futura — Plataforma CX Multi-Agente
+## 8. Diagrama de Secuencia — Outbound (campaña)
 
-Este sistema es el Módulo 1 de una plataforma de Customer Experience completa. La arquitectura de la plataforma completa y la hoja de ruta se describen en `docs/index.html` → sección "Visión Futura".
+```mermaid
+sequenceDiagram
+    autonumber
+    participant A as Analista Cobranza
+    participant S3 as S3 (campañas)
+    participant SF as Step Functions
+    participant SQS as SQS FIFO
+    participant L as Agent Lambda
+    participant Meta as WhatsApp (Meta)
+    participant C as Cliente
 
-El componente clave es un **CX Resolver** que recibe todos los mensajes entrantes del cliente y clasifica la intención para enrutar al agente especializado correcto (Cobranza, Ventas, Soporte Técnico, Operaciones). Todos los módulos comparten una capa de perfil unificado del cliente y Guardrails.
+    A->>S3: PutObject campaña.csv (validada vs. lista exclusión)
+    S3->>SF: EventBridge trigger
+    SF->>SF: Validar franja horaria (Ley 306)
+    alt fuera de franja
+      SF->>SQS: SendMessage con DelaySeconds<br/>hasta próxima franja hábil
+    else dentro de franja
+      SF->>SQS: SendMessage inmediato (rate-limited)
+    end
+    SQS->>L: Trigger (uno por cliente)
+    L->>Meta: Enviar HSM aprobada<br/>(nombre, monto, fecha, link)
+    Meta->>C: Mensaje WhatsApp
+    Note over C,L: Si el cliente responde, abre<br/>ventana de 24h — texto libre permitido
+    C-->>Meta: Respuesta (inbound)
+    Meta-->>L: Webhook → ciclo conversacional<br/>(ver diagrama Inbound en docs/index.html)
+```
+
+El ciclo inbound (turn-taking conversacional) se ilustra visualmente en `docs/index.html` → "Flujo completo — de principio a fin".
+
+---
+
+## 9. Habeas Data y Retención (Ley 81 de 2019 — Panamá)
+
+Panamá tiene marco propio de protección de datos personales (Ley 81 de 2019, reglamentada por el Decreto Ejecutivo 285 de 2021), supervisado por la **ANTAI** (Autoridad Nacional de Transparencia y Acceso a la Información). Aplica a todo tratamiento automatizado de datos personales — incluye conversaciones con agentes de IA.
+
+### 9.1 Derechos del titular (ARCO)
+
+| Derecho | Implementación |
+|---|---|
+| **Acceso** | El cliente puede solicitar al área de privacidad de LLA el historial completo de sus conversaciones. La data está en S3 con key determinística (`conversations/PA/{PHONE}/`) — recuperación O(n_turnos). |
+| **Rectificación** | Las conversaciones son inmutables (registro de hecho), pero el cliente puede corregir el `perfil` en CRM, lo cual cambia el comportamiento del agente en futuras sesiones. |
+| **Cancelación** | "ELIMÍNAME" / "NUNCA MÁS" → ticket de exclusión + retención mínima legal (5 años, por norma ACODECO sobre operaciones de crédito) en S3 Glacier. Pasados los 5 años, lifecycle policy elimina los objetos automáticamente. |
+| **Oposición** | "STOP" / "ALTO" → opt-out de la campaña por 30 días (registro en DynamoDB con TTL). No requiere intervención humana. |
+
+### 9.2 Tratamiento de datos sensibles
+
+El agente puede inadvertidamente capturar datos sensibles si el cliente los ofrece ("mi esposa está en el hospital", "perdí mi trabajo"). Aproximación:
+
+- **Bedrock Guardrails** detecta PII adicional (cédula, tarjeta de crédito, dirección) en input del cliente y la enmascara antes de persistir en S3.
+- Los prompts del Negociador instruyen explícitamente: "no preguntes ni solicites información médica, financiera personal ni de terceros."
+- Si el cliente comparte datos sensibles espontáneamente, el agente reconoce con empatía pero no los persiste en CRM como atributos estructurados — solo quedan en el historial cifrado de S3.
+
+### 9.3 Retención y cifrado
+
+| Almacén | Contenido | Retención | Cifrado |
+|---|---|---|---|
+| DynamoDB `Sessions` | Metadata de sesión activa | TTL 48h post-cierre | SSE con AWS-owned key (default) |
+| S3 `conversations` (Standard) | Historial JSON de turnos | 90 días | SSE-S3 (AES-256) |
+| S3 `conversations` (Glacier) | Historial archivado para auditoría | 5 años (ACODECO) | SSE-S3 + Object Lock en modo compliance |
+| S3 `campaigns-input` | CSVs subidos por analistas | 30 días | SSE-KMS con CMK gestionado por LLA |
+| CloudWatch Logs | Trazas técnicas (sin PII completa) | 30 días | SSE con AWS-owned key |
+
+**Aviso al inicio de cada sesión** (mensaje inbound del cliente abre ventana — el primer mensaje del agente tras la HSM incluye): *"Esta conversación es atendida por un asistente virtual y queda registrada para fines de gestión de tu cuenta. Tu información está protegida según la Ley 81 de 2019."*
+
+---
+
+## 10. Matriz de Riesgos Consolidada
+
+| # | Riesgo | Prob. | Impacto | Mitigación principal | Mitigación de respaldo |
+|---|---|---|---|---|---|
+| R1 | Prompt injection desvía al agente (cliente obtiene receta / código / etc.) | Media | Alto (reputacional) | 6 capas de defensa (§seguridad HTML): longitud + patrones + system prompts + Guardrails + WAF + rate-limit | Alarma CloudWatch si `guardrail.blocked` > 5% en 5 min — supervisor revisa transcripts |
+| R2 | Meta degrada calidad del número por block rate alto | Media | **Crítico** (suspende campañas) | KPI `whatsapp.quality_rating` monitoreado; Step Functions pausa nuevas campañas si baja a YELLOW | Diversificar en 2 números WhatsApp Business con balanceo |
+| R3 | Bedrock latencia spike — p95 > 10s sostenido | Baja | Alto (UX degradada) | Circuit breaker en Agent Lambda + mensaje "estoy procesando" | Fallback a flujo determinista que ofrece solo pago total + link (sin negociación) |
+| R4 | Bug en código del agente promete algo no autorizado (ej: condonación) | Baja | Alto (legal) | Supervisor (Bedrock Guardrails en prod) audita cada respuesta; prompts del Supervisor rechazan condonación 100% | Auditoría semanal de muestras de transcripts por el área de cumplimiento |
+| R5 | Ley 306 modificada o nueva regulación entra en vigor | Alta (en 24m) | Medio (re-trabajo) | Reglas (franjas, festivos, opt-out) viven en AppConfig — ajuste sin redespliegue | Suscripción a alertas de ACODECO y Asamblea; revisión legal trimestral |
+| R6 | CSV de campaña contiene clientes inelegibles (opt-out activo, lista negra) | Media | Alto (legal + costo) | Validación de elegibilidad en el pipeline que genera el CSV, **antes** de S3 | Job nocturno reconcilia DynamoDB `excluidos_canal` vs. campañas activas y aborta envíos pendientes |
+| R7 | Costos de Bedrock se disparan por uso anómalo | Baja | Medio (financiero) | AWS Budgets con alarma al 80% del presupuesto mensual; rate-limit por número en DynamoDB | Throttle global automático: corta nuevas campañas si gasto diario > 3× promedio |
+| R8 | Equipo de asesores humanos no atiende escalamientos en SLA | Media | Alto (UX, promesa rota) | Dashboard de "casos en cola" con SLA visible; alerta si > 30 min | Mensaje automático al cliente: "tu caso está en cola, en X horas te contactamos" |
+| R9 | Cliente confunde al agente con un humano y se siente engañado | Baja | Medio (reputacional) | Identificación obligatoria como "Asistente Virtual de LLA" en cada sesión + cada 10 turnos | Monitoreo de keywords "¿eres humano?" en transcripts → respuesta clarificadora pre-aprobada |
+| R10 | Filtración de PII en logs / CloudWatch | Baja | **Crítico** (Ley 81) | Logging estructurado que enmascara teléfono (últimos 4 dígitos) y omite contenido de mensajes | Revisión de retención de logs (30d max) + alertas en GuardDuty |
+
+**Priorización del comité**: R2 (Meta tier), R4 (compliance), R6 (elegibilidad) y R10 (PII) son los 4 que requieren validación explícita con stakeholders antes del go-live. R3, R7 son técnicos y se mitigan en código.
+
+---
+
+## 11. Evaluación del Agente — ¿Cómo sabemos que la calidad se mantiene?
+
+Las métricas técnicas (latencia, errores) y de negocio (KPIs) miden si el sistema **opera**. La evaluación del agente mide si el sistema **dice las cosas correctas**. Son procesos distintos.
+
+### 11.1 Golden set de conversaciones
+
+Mantener un dataset de **100–200 conversaciones de referencia** (sintéticas + reales anonimizadas) con la respuesta esperada o el comportamiento aceptable etiquetado por el equipo de cumplimiento. Cobertura:
+
+- 30% caso feliz (cliente acepta pagar en primer intento)
+- 25% negociación a cuotas
+- 15% escalamiento por hostilidad
+- 10% intento de prompt injection
+- 10% disputa de facturación
+- 10% casos edge (cliente comparte datos sensibles, idioma mezclado, etc.)
+
+Se almacena en S3 (`evals/golden_set/`) versionado.
+
+### 11.2 LLM-as-judge para regresión
+
+Ante cada cambio de prompt o modelo, se re-corre el golden set y un LLM evaluador (Claude Sonnet, distinto del modelo en producción para evitar sesgo) puntúa cada conversación en 4 dimensiones:
+
+| Dimensión | Escala | Criterio |
+|---|---|---|
+| **Cumplimiento** | 0–5 | ¿Respetó políticas de tono, franja horaria, identificación, no-promesas? |
+| **Resolución** | 0–5 | ¿Llegó al desenlace correcto (pago / promesa / escalamiento adecuado)? |
+| **Empatía** | 0–5 | ¿Tono apropiado al perfil de riesgo y al estado emocional del cliente? |
+| **Eficiencia** | 0–5 | ¿Resolvió en mínimo de turnos sin redundancia? |
+
+Umbrales: cualquier regresión > 0.3 puntos vs. baseline bloquea el merge del cambio.
+
+### 11.3 A/B testing en producción
+
+Cuando se cambia un prompt o el modelo de un agente, se enruta al 10% del tráfico a la nueva versión por 7 días. Se comparan:
+
+- Tasa de acuerdos (KPI primario)
+- Tasa de escalamiento
+- Tasa de opt-out (proxy de calidad de UX)
+- NPS si se mide vía encuesta post-sesión
+
+Se promueve la nueva versión si gana en al menos 2 de 4 sin perder en ninguno.
+
+### 11.4 Revisión humana muestral
+
+Cada semana, el equipo de cumplimiento revisa una muestra aleatoria de **50 conversaciones** (estratificada por desenlace) para detectar problemas que el LLM-judge no captura: tono inapropiado culturalmente, respuestas técnicamente correctas pero "robotizadas", o decisiones de escalamiento subóptimas.
+
+Los hallazgos alimentan el golden set y refinan los prompts en AppConfig.
+
+---
+
+## 12. Operating Model — RACI
+
+Quién hace qué en la operación día a día. Cada actividad tiene **un solo Responsable** (R) y **un solo Aprobador** (A); Consultados (C) e Informados (I) pueden ser varios.
+
+| Actividad | Analista Cobranza | Supervisor Operaciones | Asesor Humano | Cumplimiento | IT / Plataforma |
+|---|---|---|---|---|---|
+| Generar CSV de campaña (con elegibilidad validada) | **R** | A | — | I | C |
+| Subir CSV a S3 | **R/A** | I | — | — | — |
+| Ajustar reglas de negocio en AppConfig (cuotas, franjas, festivos) | C | **R/A** | — | I | C |
+| Modificar prompts del agente | C | C | — | **A** | **R** |
+| Monitorear dashboard tiempo real | I | **R/A** | — | — | C |
+| Atender alertas de Guardrails / DLQ | I | **R/A** | — | C | C |
+| Atender casos escalados a humano | — | I | **R/A** | — | — |
+| Revisar muestra semanal de conversaciones | I | C | C | **R/A** | — |
+| Resolver disputas de facturación | I | I | **R/A** | C | — |
+| Cambiar configuración de WhatsApp Business / Meta | I | C | — | C | **R/A** |
+| Aprobar nuevas HSMs ante Meta | C | C | — | **A** | **R** |
+| Aprobar cambio de modelo Bedrock | I | C | — | C | **R/A** |
+| Responder solicitudes ARCO (Ley 81) | I | I | — | **R/A** | C |
+
+---
+
+## 13. Visión Futura — Plataforma CX Multi-Agente
+
+Este sistema es el Módulo 1 de una plataforma de Customer Experience completa. La arquitectura completa y la hoja de ruta se describen en `docs/index.html` → sección "Visión Futura". El componente clave es un **CX Resolver** que enruta cualquier mensaje entrante al agente especializado correcto (Cobranza, Ventas, Soporte Técnico, Operaciones) sobre una capa compartida de perfil unificado y Guardrails.
