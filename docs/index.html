@@ -246,19 +246,104 @@
         </div>
       </div>
 
-      <!-- Flujo de conversación -->
-      <div class="bg-white rounded-xl border border-gray-200 p-6">
-        <h3 class="font-bold text-gray-900 mb-4">Flujo de una conversación típica</h3>
-        <div class="arrow-flow mb-4">
-          <span class="flow-step bg-blue-100 text-blue-800">① Cliente escribe</span><span class="text-gray-400">→</span>
-          <span class="flow-step bg-gray-100 text-gray-700">② Validar firma Meta</span><span class="text-gray-400">→</span>
-          <span class="flow-step bg-blue-100 text-blue-800">③ Validador confirma identidad</span><span class="text-gray-400">→</span>
-          <span class="flow-step bg-yellow-100 text-yellow-800">④ Negociador propone pago</span><span class="text-gray-400">→</span>
-          <span class="flow-step bg-orange-100 text-orange-800">⑤ Registrador asienta en CRM</span><span class="text-gray-400">→</span>
-          <span class="flow-step bg-red-50 text-red-700">⑥ Guardrails revisa</span><span class="text-gray-400">→</span>
-          <span class="flow-step bg-green-100 text-green-800">⑦ Mensaje al cliente</span>
+      <!-- Flujo de conversación — dos etapas -->
+      <div class="bg-white rounded-xl border border-gray-200 p-6 space-y-8">
+        <h3 class="font-bold text-gray-900 text-base">Flujo completo — de principio a fin</h3>
+
+        <!-- ETAPA 1: Outbound -->
+        <div>
+          <div class="flex items-center gap-2 mb-3">
+            <span class="bg-gray-800 text-white text-xs font-bold px-3 py-1 rounded-full">ETAPA 1</span>
+            <span class="font-bold text-gray-800 text-sm">LLA identifica y hace el primer contacto (Outbound)</span>
+          </div>
+          <div class="relative">
+            <!-- Línea conectora -->
+            <div class="absolute top-5 left-5 right-5 h-0.5 bg-gray-200 z-0"></div>
+            <div class="relative z-10 grid grid-cols-2 md:grid-cols-5 gap-3">
+              <div class="text-center">
+                <div class="w-10 h-10 rounded-full bg-slate-100 text-slate-700 font-bold text-sm flex items-center justify-center mx-auto mb-2 border-2 border-slate-300">①</div>
+                <div class="text-xs font-bold text-gray-700 leading-tight">Billing identifica morosos</div>
+                <div class="text-xs text-gray-400 mt-1">Sistema de facturación exporta clientes con deuda vencida</div>
+              </div>
+              <div class="text-center">
+                <div class="w-10 h-10 rounded-full bg-slate-100 text-slate-700 font-bold text-sm flex items-center justify-center mx-auto mb-2 border-2 border-slate-300">②</div>
+                <div class="text-xs font-bold text-gray-700 leading-tight">CSV cargado a S3</div>
+                <div class="text-xs text-gray-400 mt-1">Analista sube la campaña; el pipeline se activa automáticamente</div>
+              </div>
+              <div class="text-center">
+                <div class="w-10 h-10 rounded-full bg-slate-100 text-slate-700 font-bold text-sm flex items-center justify-center mx-auto mb-2 border-2 border-slate-300">③</div>
+                <div class="text-xs font-bold text-gray-700 leading-tight">Step Functions valida horario</div>
+                <div class="text-xs text-gray-400 mt-1">Verifica franja Ley 306; encola con delay si está fuera de horario</div>
+              </div>
+              <div class="text-center">
+                <div class="w-10 h-10 rounded-full bg-slate-100 text-slate-700 font-bold text-sm flex items-center justify-center mx-auto mb-2 border-2 border-slate-300">④</div>
+                <div class="text-xs font-bold text-gray-700 leading-tight">SQS distribuye mensajes</div>
+                <div class="text-xs text-gray-400 mt-1">Rate limiting respetando los límites de la API de Meta</div>
+              </div>
+              <div class="text-center">
+                <div class="w-10 h-10 rounded-full bg-green-100 text-green-700 font-bold text-sm flex items-center justify-center mx-auto mb-2 border-2 border-green-400">⑤</div>
+                <div class="text-xs font-bold text-green-700 leading-tight">Primer mensaje al cliente</div>
+                <div class="text-xs text-gray-400 mt-1">LLA hace el contacto: saludo y verificación de identidad</div>
+              </div>
+            </div>
+          </div>
         </div>
-        <p class="text-xs text-gray-500">Latencia objetivo p95: <strong>&lt;5 segundos</strong> desde que el cliente envía el mensaje hasta que recibe respuesta.</p>
+
+        <!-- Separador con flecha -->
+        <div class="flex items-center gap-3">
+          <div class="flex-1 border-t border-dashed border-gray-300"></div>
+          <div class="text-xs text-gray-400 font-medium px-2">el cliente responde</div>
+          <div class="flex-1 border-t border-dashed border-gray-300"></div>
+        </div>
+
+        <!-- ETAPA 2: Conversación -->
+        <div>
+          <div class="flex items-center gap-2 mb-3">
+            <span class="bg-gray-800 text-white text-xs font-bold px-3 py-1 rounded-full">ETAPA 2</span>
+            <span class="font-bold text-gray-800 text-sm">Ciclo de conversación — se repite por cada mensaje del cliente (Inbound)</span>
+          </div>
+          <div class="relative">
+            <div class="absolute top-5 left-5 right-5 h-0.5 bg-gray-200 z-0"></div>
+            <div class="relative z-10 grid grid-cols-2 md:grid-cols-6 gap-3">
+              <div class="text-center">
+                <div class="w-10 h-10 rounded-full bg-blue-100 text-blue-700 font-bold text-sm flex items-center justify-center mx-auto mb-2 border-2 border-blue-300">A</div>
+                <div class="text-xs font-bold text-gray-700 leading-tight">Webhook recibe mensaje</div>
+                <div class="text-xs text-gray-400 mt-1">API Gateway valida firma Meta y responde 200 en &lt;100ms</div>
+              </div>
+              <div class="text-center">
+                <div class="w-10 h-10 rounded-full bg-blue-100 text-blue-700 font-bold text-sm flex items-center justify-center mx-auto mb-2 border-2 border-blue-300">B</div>
+                <div class="text-xs font-bold text-gray-700 leading-tight">Guardrail de entrada</div>
+                <div class="text-xs text-gray-400 mt-1">Longitud, off-topic, injection — rechazado antes del LLM si aplica</div>
+              </div>
+              <div class="text-center">
+                <div class="w-10 h-10 rounded-full bg-blue-100 text-blue-700 font-bold text-sm flex items-center justify-center mx-auto mb-2 border-2 border-blue-300">C</div>
+                <div class="text-xs font-bold text-gray-700 leading-tight">Agente activo procesa</div>
+                <div class="text-xs text-gray-400 mt-1">Validador → Negociador → Registrador → Cierre según la fase</div>
+              </div>
+              <div class="text-center">
+                <div class="w-10 h-10 rounded-full bg-yellow-100 text-yellow-700 font-bold text-sm flex items-center justify-center mx-auto mb-2 border-2 border-yellow-300">D</div>
+                <div class="text-xs font-bold text-gray-700 leading-tight">Tool calls (si aplica)</div>
+                <div class="text-xs text-gray-400 mt-1">consultar_saldo · generar_link · registrar_promesa · escalar</div>
+              </div>
+              <div class="text-center">
+                <div class="w-10 h-10 rounded-full bg-red-100 text-red-700 font-bold text-sm flex items-center justify-center mx-auto mb-2 border-2 border-red-300">E</div>
+                <div class="text-xs font-bold text-gray-700 leading-tight">Supervisor revisa</div>
+                <div class="text-xs text-gray-400 mt-1">Bedrock Guardrails audita la respuesta antes de enviarla</div>
+              </div>
+              <div class="text-center">
+                <div class="w-10 h-10 rounded-full bg-green-100 text-green-700 font-bold text-sm flex items-center justify-center mx-auto mb-2 border-2 border-green-400">F</div>
+                <div class="text-xs font-bold text-gray-700 leading-tight">Respuesta al cliente</div>
+                <div class="text-xs text-gray-400 mt-1">WhatsApp · p95 &lt;5s desde que el cliente envió su mensaje</div>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <div class="grid md:grid-cols-3 gap-3 pt-2 border-t border-gray-100">
+          <div class="text-xs text-gray-500"><span class="font-bold text-gray-700">Latencia objetivo (Etapa 2):</span> p95 &lt;5,000ms · p99 &lt;8,000ms end-to-end</div>
+          <div class="text-xs text-gray-500"><span class="font-bold text-gray-700">Historial:</span> Cada turno se persiste en S3 — el agente nunca pierde el contexto entre mensajes</div>
+          <div class="text-xs text-gray-500"><span class="font-bold text-gray-700">Escalamiento:</span> Si el agente invoca <code class="bg-gray-100 px-1 rounded">escalar_a_humano()</code> en el paso D, el ciclo termina y el caso pasa a la cola de asesores</div>
+        </div>
       </div>
 
       <!-- Tono por perfil de riesgo -->
