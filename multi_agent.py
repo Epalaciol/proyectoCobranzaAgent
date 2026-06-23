@@ -13,6 +13,8 @@ from langchain_core.messages import (
 )
 from typing import List, Optional
 
+from prompt_loader import get_prompt
+
 # ==========================================
 # LOGGING ESTRUCTURADO
 # ==========================================
@@ -170,8 +172,6 @@ TOOL_MAP = {t.name: t for t in tools}
 
 MODEL_NAME = os.getenv("OLLAMA_MODEL", "llama3.1")
 
-import prompts
-
 try:
     llm_validador = ChatOllama(model=MODEL_NAME, temperature=0.2).bind_tools(
         [consultar_datos_cliente]
@@ -224,16 +224,16 @@ def limpiar_marcas(texto: str) -> str:
 
 
 def agente_para_fase(fase: str):
-    """Retorna (llm, system_prompt) según la fase actual."""
+    """Retorna (llm, system_prompt) según la fase actual. Prompts leídos en llamada para reflejar cambios en AppConfig sin reiniciar."""
     if fase == FASE_VALIDAR:
-        return llm_validador, prompts.SYSTEM_PROMPT_VALIDADOR
+        return llm_validador, get_prompt("VALIDADOR")
     if fase == FASE_NEGOCIAR:
-        return llm_negociador, prompts.SYSTEM_PROMPT_NEGOCIADOR
+        return llm_negociador, get_prompt("NEGOCIADOR")
     if fase == FASE_REGISTRAR:
-        return llm_registrador, prompts.SYSTEM_PROMPT_REGISTRADOR
+        return llm_registrador, get_prompt("REGISTRADOR")
     if fase == FASE_CERRAR:
-        return llm_cierre, prompts.SYSTEM_PROMPT_CIERRE
-    return llm_validador, prompts.SYSTEM_PROMPT_VALIDADOR
+        return llm_cierre, get_prompt("CIERRE")
+    return llm_validador, get_prompt("VALIDADOR")
 
 
 # ==========================================
@@ -284,20 +284,10 @@ def procesar_mensaje(historial_mensajes: List, fase_actual: str = FASE_VALIDAR) 
     """
     agente, system_prompt = agente_para_fase(fase_actual)
 
-    # Inyectar fecha actual para que el LLM calcule fechas reales de cuotas
-    hoy = date.today()
-    cuota1 = (hoy + timedelta(days=3)).strftime("%d/%m/%Y")
-    cuota2 = (hoy + timedelta(days=18)).strftime("%d/%m/%Y")
-    cuota3 = (hoy + timedelta(days=33)).strftime("%d/%m/%Y")
-    contexto_fecha = (
-        f"\n\nCONTEXTO DEL SISTEMA:\n"
-        f"- FECHA_HOY: {hoy.strftime('%d/%m/%Y')} ({hoy.strftime('%A')})\n"
-        f"- Fechas sugeridas para cuotas: CUOTA_1={cuota1} | CUOTA_2={cuota2} | CUOTA_3={cuota3}\n"
-        f"- Usá estas fechas exactas al proponer planes de cuotas. NO uses placeholders como [fecha]."
-    )
-    system_prompt_con_fecha = system_prompt + contexto_fecha
-
-    mensajes_para_llm = [SystemMessage(content=system_prompt_con_fecha)] + historial_mensajes
+    # Las fechas de cuotas y el teléfono del cliente vienen en el primer mensaje
+    # del historial (SystemMessage de campaña inyectado por app.py).
+    # No se repiten aquí para evitar duplicación.
+    mensajes_para_llm = [SystemMessage(content=system_prompt)] + historial_mensajes
 
     # --- Invocación principal del agente ---
     try:
@@ -329,7 +319,7 @@ def procesar_mensaje(historial_mensajes: List, fase_actual: str = FASE_VALIDAR) 
 
         try:
             final_response = agente.invoke(
-                [SystemMessage(content=system_prompt_con_fecha)] + historial_actualizado
+                [SystemMessage(content=system_prompt)] + historial_actualizado
             )
         except Exception as e:
             logger.error("Error en re-invocación post-tool (%s): %s", fase_actual, e)
@@ -356,7 +346,7 @@ def procesar_mensaje(historial_mensajes: List, fase_actual: str = FASE_VALIDAR) 
     logger.info("Supervisor auditando: '%s'", texto_limpio[:100])
     try:
         supervision = supervisor_llm.invoke([
-            SystemMessage(content=prompts.SYSTEM_PROMPT_SUPERVISOR),
+            SystemMessage(content=get_prompt("SUPERVISOR")),
             HumanMessage(content=f"Mensaje del agente a evaluar:\n{texto_limpio}"),
         ])
         decision = supervision.content.strip()

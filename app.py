@@ -82,9 +82,9 @@ def _build_contexto(numero: str, nombre: str) -> SystemMessage:
         f"CONTEXTO DE CAMPAÑA:\n"
         f"- TELEFONO_CONTACTO={numero}\n"
         f"- Titular registrado: {nombre}\n"
-        f"- FECHA_HOY: {hoy.strftime('%d/%m/%Y')}\n"
-        f"- Fechas para cuotas: CUOTA_1={c1} | CUOTA_2={c2} | CUOTA_3={c3}\n"
-        "Usá TELEFONO_CONTACTO en cualquier tool. Usá las fechas de cuotas al proponer planes. "
+        f"- FECHA_HOY: {hoy.strftime('%d/%m/%Y')} ({hoy.strftime('%A')})\n"
+        f"- Fechas sugeridas para cuotas: CUOTA_1={c1} | CUOTA_2={c2} | CUOTA_3={c3}\n"
+        "Usá TELEFONO_CONTACTO en cualquier tool. Calculá fechas de cuotas a partir de CUOTA_1/2/3. "
         "NUNCA uses placeholders — siempre usá valores reales."
     ))
 

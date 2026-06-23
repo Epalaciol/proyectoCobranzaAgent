@@ -41,14 +41,14 @@
       <span class="font-bold text-red-600 text-lg tracking-tight">Proyecto Ágil</span>
       <div class="hidden md:flex gap-5 text-sm font-medium text-gray-600">
         <a href="#problema"     class="nav-link pb-1">El Problema</a>
+        <a href="#roi"          class="nav-link pb-1">Impacto</a>
         <a href="#solucion"     class="nav-link pb-1">La Solución</a>
+        <a href="#operaciones"  class="nav-link pb-1">Operaciones</a>
         <a href="#metricas"     class="nav-link pb-1">Métricas</a>
         <a href="#escalamiento" class="nav-link pb-1">Escalamiento</a>
         <a href="#arquitectura" class="nav-link pb-1">Arquitectura</a>
         <a href="#seguridad"    class="nav-link pb-1">Seguridad</a>
-        <a href="#costos"       class="nav-link pb-1">Costos</a>
-        <a href="#futuro"       class="nav-link pb-1">Visión Futura</a>
-        <a href="#supuestos"    class="nav-link pb-1">Supuestos</a>
+        <a href="#ia-vs-arbol"  class="nav-link pb-1">IA Agentic</a>
       </div>
     </div>
   </nav>
@@ -63,11 +63,11 @@
         <span class="badge tag-legal">Compliance</span>
       </div>
       <h1 class="text-4xl md:text-5xl font-extrabold text-gray-900 leading-tight mb-4">
-        Sistema Multi-Agente de<br/>Gestión de Cobranza
+        Recuperar cartera<br/>sin perder clientes
       </h1>
       <p class="text-xl text-gray-500 max-w-2xl mx-auto">
-        Automatización inteligente de la recuperación de cartera vencida vía WhatsApp —
-        diseñado para el cliente latinoamericano, con escalada humana cuando importa.
+        Un sistema de agentes de IA que gestiona la cobranza vía WhatsApp de forma empática,
+        legal y escalable — y transfiere al asesor humano exactamente cuando importa.
       </p>
       <div class="mt-8 flex flex-wrap justify-center gap-4">
         <a href="https://github.com/Epalaciol/proyectoCobranzaAgent"
@@ -119,6 +119,58 @@
           <div class="flex items-start gap-2"><span class="text-red-500 mt-0.5">✗</span> No hay seguimiento automático cuando el cliente "deja en visto"</div>
           <div class="flex items-start gap-2"><span class="text-red-500 mt-0.5">✗</span> El 100% de las llamadas tienen el mismo costo, aunque el cliente pague en los primeros 30 segundos</div>
           <div class="flex items-start gap-2"><span class="text-red-500 mt-0.5">✗</span> Los acuerdos verbales no siempre quedan registrados en el CRM</div>
+        </div>
+      </div>
+    </section>
+
+    <!-- ═══════════════════════════════════════════ -->
+    <!-- BLOQUE ROI: IMPACTO ESPERADO               -->
+    <!-- ═══════════════════════════════════════════ -->
+    <section id="roi">
+      <div class="inline-block bg-green-100 text-green-700 rounded-full px-4 py-1 text-xs font-bold uppercase mb-4">Impacto Esperado</div>
+      <h2 class="text-3xl font-extrabold text-gray-900 mb-3">El negocio en números</h2>
+      <p class="text-gray-500 text-base mb-8 max-w-3xl">
+        Estas son las cifras que el sistema entrega. No son estimaciones optimistas — el cálculo incluye el costo real del escalamiento humano.
+      </p>
+
+      <div class="grid md:grid-cols-3 gap-6 mb-6">
+        <div class="section-card bg-white rounded-xl border-2 border-green-200 p-6 text-center">
+          <div class="text-5xl font-extrabold text-green-600 mb-2">80%</div>
+          <div class="font-bold text-gray-800 mb-1">Reducción de costo operativo</div>
+          <div class="text-sm text-gray-500">De $3.50 por contacto (call center) a $0.002 (IA) en el 80% de los casos. Costo real mixto: $7k vs $35k por 10,000 contactos.</div>
+        </div>
+        <div class="section-card bg-white rounded-xl border-2 border-blue-200 p-6 text-center">
+          <div class="text-5xl font-extrabold text-blue-600 mb-2">+$90k</div>
+          <div class="font-bold text-gray-800 mb-1">Ingreso adicional por campaña</div>
+          <div class="text-sm text-gray-500">Con una cartera de $500k gestionada, el salto de 12% a 30% de recuperación representa $90,000 adicionales por campaña.</div>
+        </div>
+        <div class="section-card bg-white rounded-xl border-2 border-yellow-200 p-6 text-center">
+          <div class="text-5xl font-extrabold text-yellow-600 mb-2">&lt;20%</div>
+          <div class="font-bold text-gray-800 mb-1">Casos que escalan a humano</div>
+          <div class="text-sm text-gray-500">Los asesores se enfocan en los casos complejos — renegociaciones, disputas, clientes estratégicos. El volumen rutinario lo resuelve el agente.</div>
+        </div>
+      </div>
+
+      <div class="bg-gray-900 text-white rounded-xl p-6">
+        <div class="grid md:grid-cols-3 gap-6 text-center">
+          <div>
+            <div class="text-xs text-gray-400 uppercase font-bold mb-1">Sin IA (baseline)</div>
+            <div class="text-3xl font-extrabold text-red-400">$35,000/mes</div>
+            <div class="text-xs text-gray-400 mt-1">10,000 contactos × $3.50 call center</div>
+          </div>
+          <div class="flex items-center justify-center">
+            <div class="text-gray-500 text-2xl">→</div>
+          </div>
+          <div>
+            <div class="text-xs text-gray-400 uppercase font-bold mb-1">Con IA (modelo híbrido)</div>
+            <div class="text-3xl font-extrabold text-green-400">$7,016/mes</div>
+            <div class="text-xs text-gray-400 mt-1">$16 IA + $7,000 humanos (20% escalamiento)</div>
+          </div>
+        </div>
+        <div class="mt-4 pt-4 border-t border-gray-700 text-center">
+          <span class="text-sm text-gray-400">Ahorro real mensual: </span>
+          <span class="text-xl font-extrabold text-green-400">~$28,000 — 80% de reducción</span>
+          <span class="block text-xs text-gray-500 mt-1">El número honesto: la comparación incluye el costo de los asesores que atienden los escalamientos.</span>
         </div>
       </div>
     </section>
@@ -240,11 +292,104 @@
         </div>
         <div class="mt-4 bg-yellow-50 border border-yellow-200 rounded-lg p-4 text-sm">
           <span class="font-bold text-yellow-800">Supuesto declarado:</span>
-          <span class="text-yellow-700"> Los datos de días de mora, historial de promesas y monto adeudado provienen del <strong>Billing API y CRM existentes</strong>. No se requiere una base de datos adicional — el perfil se computa en tiempo de ejecución con información ya disponible. Si el CRM no almacena historial de promesas, este campo se inicializa en cero.</span>
+          <span class="text-yellow-700"> Se asume que <strong>LLA dispone de un área de riesgo</strong> que ya clasifica a los clientes en BAJO / MEDIO / ALTO. El agente consume ese perfil como dato de entrada — no lo calcula ni lo reemplaza. La fórmula de segmentación mostrada es ilustrativa y sirve como fallback si el dato no está disponible en la API.</span>
         </div>
         <div class="mt-3 bg-blue-50 border border-blue-200 rounded-lg p-4 text-sm">
           <span class="font-bold text-blue-800">Actualización dinámica del perfil:</span>
           <span class="text-blue-700"> Durante la conversación, la respuesta del cliente actualiza el perfil. Si el cliente muestra hostilidad o evasión repetida, el Negociador detecta el patrón y ajusta la estrategia (más empatía, menos presión) o escala al canal humano. El resultado de la interacción (acordó / evadió / hostil) se persiste en el CRM para enriquecer futuras sesiones.</span>
+        </div>
+      </div>
+    </section>
+
+    <!-- ═══════════════════════════════════════════ -->
+    <!-- BLOQUE 2B: CÓMO OPERA EL SISTEMA           -->
+    <!-- ═══════════════════════════════════════════ -->
+    <section id="operaciones">
+      <div class="inline-block bg-purple-100 text-purple-700 rounded-full px-4 py-1 text-xs font-bold uppercase mb-4">Operaciones</div>
+      <h2 class="text-3xl font-extrabold text-gray-900 mb-3">¿Cómo funciona una campaña de principio a fin?</h2>
+      <p class="text-gray-500 text-base mb-8 max-w-3xl">
+        El sistema no reemplaza al equipo de cobranza — lo amplifica. El equipo define las reglas, carga las campañas y atiende los casos complejos. El agente se encarga del volumen.
+      </p>
+
+      <!-- Narrativa del día en la vida -->
+      <div class="bg-white rounded-xl border border-gray-200 p-6 mb-6">
+        <h3 class="font-bold text-gray-900 mb-5 text-base">Un lunes a las 8:01 AM</h3>
+        <div class="space-y-4">
+          <div class="flex gap-4 items-start">
+            <div class="w-8 h-8 rounded-full bg-purple-100 text-purple-700 font-extrabold flex items-center justify-center text-sm flex-shrink-0">1</div>
+            <div>
+              <div class="font-bold text-gray-800 text-sm">El analista de cobranza sube el archivo de campaña</div>
+              <div class="text-sm text-gray-500 mt-1">El equipo exporta desde el sistema de facturación un CSV con los clientes en mora de esa semana (nombre, teléfono, monto, días vencidos, segmento de riesgo). Lo sube al bucket S3 de campañas. No necesita acceso a la nube ni conocimiento técnico — puede ser desde la misma interfaz del CRM.</div>
+            </div>
+          </div>
+          <div class="flex gap-4 items-start">
+            <div class="w-8 h-8 rounded-full bg-purple-100 text-purple-700 font-extrabold flex items-center justify-center text-sm flex-shrink-0">2</div>
+            <div>
+              <div class="font-bold text-gray-800 text-sm">Step Functions valida y distribuye</div>
+              <div class="text-sm text-gray-500 mt-1">El pipeline detecta el archivo nuevo, valida que la hora actual está dentro de la franja permitida por la Ley 306 (L–V 8–18h, Sáb 8–15h), y distribuye los mensajes en la cola SQS respetando los límites de rate de la API de Meta. Si son las 3 AM, los mensajes se encolan con delay automático hasta las 8:01 AM del primer día hábil.</div>
+            </div>
+          </div>
+          <div class="flex gap-4 items-start">
+            <div class="w-8 h-8 rounded-full bg-purple-100 text-purple-700 font-extrabold flex items-center justify-center text-sm flex-shrink-0">3</div>
+            <div>
+              <div class="font-bold text-gray-800 text-sm">El agente gestiona las conversaciones</div>
+              <div class="text-sm text-gray-500 mt-1">Cada mensaje entrante dispara una Lambda. El agente saluda al cliente, valida su identidad, negocia según su perfil y registra el acuerdo en CRM — todo en tiempo real. A las 9:00 AM ya tienen 400+ conversaciones activas, algo imposible para un equipo humano.</div>
+            </div>
+          </div>
+          <div class="flex gap-4 items-start">
+            <div class="w-8 h-8 rounded-full bg-purple-100 text-purple-700 font-extrabold flex items-center justify-center text-sm flex-shrink-0">4</div>
+            <div>
+              <div class="font-bold text-gray-800 text-sm">El supervisor de cobranza monitorea en tiempo real</div>
+              <div class="text-sm text-gray-500 mt-1">El dashboard de CloudWatch muestra: tasa de acuerdos, escalamientos activos, casos en cola humana y alertas de anomalías. Si el Guardrail rechaza un porcentaje inusual de mensajes (posible injection attack), el supervisor recibe alerta inmediata. Puede ajustar el tono o las reglas de negociación desde AppConfig sin tocar código.</div>
+            </div>
+          </div>
+          <div class="flex gap-4 items-start">
+            <div class="w-8 h-8 rounded-full bg-purple-100 text-purple-700 font-extrabold flex items-center justify-center text-sm flex-shrink-0">5</div>
+            <div>
+              <div class="font-bold text-gray-800 text-sm">Los asesores humanos atienden los casos que importan</div>
+              <div class="text-sm text-gray-500 mt-1">Los casos escalados llegan con historial completo, perfil de riesgo y motivo de escalamiento. El asesor no empieza de cero — tiene todo el contexto de la conversación. Se enfoca en renegociaciones complejas, disputas de facturación y clientes estratégicos.</div>
+            </div>
+          </div>
+          <div class="flex gap-4 items-start">
+            <div class="w-8 h-8 rounded-full bg-green-100 text-green-700 font-extrabold flex items-center justify-center text-sm flex-shrink-0">✓</div>
+            <div>
+              <div class="font-bold text-gray-800 text-sm">Al cierre del día: reporte automático</div>
+              <div class="text-sm text-gray-500 mt-1">Conversaciones resueltas, acuerdos registrados, monto comprometido, tasa de escalamiento y follow-ups programados — todo disponible en el dashboard sin trabajo manual de reporting.</div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Roles y responsabilidades -->
+      <div class="grid md:grid-cols-3 gap-4">
+        <div class="bg-white rounded-xl border border-gray-200 p-5">
+          <div class="text-lg mb-2">👤</div>
+          <h3 class="font-bold text-gray-900 text-sm mb-2">Analista de Cobranza</h3>
+          <div class="text-xs text-gray-600 space-y-1">
+            <div>→ Sube el CSV de campaña a S3</div>
+            <div>→ Define los segmentos de clientes</div>
+            <div>→ Revisa el reporte diario de acuerdos</div>
+          </div>
+        </div>
+        <div class="bg-white rounded-xl border border-gray-200 p-5">
+          <div class="text-lg mb-2">🎛️</div>
+          <h3 class="font-bold text-gray-900 text-sm mb-2">Supervisor de Operaciones</h3>
+          <div class="text-xs text-gray-600 space-y-1">
+            <div>→ Monitorea el dashboard en tiempo real</div>
+            <div>→ Ajusta reglas en AppConfig sin código</div>
+            <div>→ Atiende alertas de Guardrails o DLQ</div>
+            <div>→ Extiende límites de sesión en casos activos</div>
+          </div>
+        </div>
+        <div class="bg-white rounded-xl border border-gray-200 p-5">
+          <div class="text-lg mb-2">🤝</div>
+          <h3 class="font-bold text-gray-900 text-sm mb-2">Asesor Humano</h3>
+          <div class="text-xs text-gray-600 space-y-1">
+            <div>→ Atiende casos escalados con contexto completo</div>
+            <div>→ Resuelve disputes de facturación</div>
+            <div>→ Cierra renegociaciones complejas</div>
+            <div>→ Gestiona clientes estratégicos o VIP</div>
+          </div>
         </div>
       </div>
     </section>
@@ -673,7 +818,15 @@
             </div>
             <div class="flex items-start gap-2">
               <span class="text-yellow-500 font-bold mt-0.5">▸</span>
-              <div><strong>Opt-out temporal (Ley 306/2026):</strong> STOP, ALTO, PARA, NO ME CONTACTES → suspensión de contacto por la campaña activa (mínimo 30 días). No es un bloqueo permanente: si el cliente paga o inicia contacto voluntariamente, puede ser reincorporado. NUNCA MÁS, ELIMÍNAME → opt-out del canal WhatsApp hasta que el cliente lo revoque.</div>
+              <div><strong>Intentos de persuasión:</strong> El agente realiza hasta 3 intentos de negociación antes de aceptar un rechazo. Un "no me interesa" inicial no cierra la sesión — el agente puede abordar la objeción con empatía 1–2 veces más. Después del tercer rechazo sostenido, activa el cierre o programa un follow-up.</div>
+            </div>
+            <div class="flex items-start gap-2">
+              <span class="text-yellow-500 font-bold mt-0.5">▸</span>
+              <div><strong>Opt-out explícito de campaña (Ley 306/2026):</strong> STOP, ALTO, PARA, NO ME CONTACTES → cierre inmediato sin intentos adicionales. Suspensión mínima 30 días en la campaña activa. El cliente puede ser reincorporado si paga o inicia contacto voluntariamente.</div>
+            </div>
+            <div class="flex items-start gap-2">
+              <span class="text-yellow-500 font-bold mt-0.5">▸</span>
+              <div><strong>Solicitud de exclusión de lista:</strong> NUNCA MÁS, ELIMÍNAME, QUÍTENME DE SU LISTA → el agente <strong>no tiene capacidad de modificar listas de bloqueo</strong>. Registra la solicitud en CRM y la escala al área de gestión de clientes de LLA, que es la responsable de ese proceso. El agente cierra la sesión indicando que la solicitud será procesada.</div>
             </div>
             <div class="flex items-start gap-2">
               <span class="text-yellow-500 font-bold mt-0.5">▸</span>
@@ -918,6 +1071,16 @@
               <td class="p-4 text-gray-500">Riesgo legal de contactar clientes sin opt-in</td>
               <td class="p-4 text-gray-500">Campaña de opt-in previa al lanzamiento; solo se contacta a quienes confirmen</td>
             </tr>
+            <tr>
+              <td class="p-4 text-gray-700"><strong>Todos los clientes cargados en una campaña son aptos para ser contactados</strong><div class="mt-1 text-xs text-gray-500">La elegibilidad (opt-out activo, lista de exclusión, restricción legal) se valida antes de cargar la campaña — no dentro del agente</div></td>
+              <td class="p-4 text-gray-500">El agente podría intentar contactar clientes con opt-out activo o restricción vigente, incurriendo en infracción regulatoria</td>
+              <td class="p-4 text-gray-500">El proceso que genera el archivo de campaña valida la elegibilidad consultando la lista de exclusión y el estado de opt-out antes de incluir a cada cliente</td>
+            </tr>
+            <tr>
+              <td class="p-4 text-gray-700"><strong>LLA dispone de un área de riesgo que clasifica a los clientes (BAJO / MEDIO / ALTO)</strong></td>
+              <td class="p-4 text-gray-500">Sin perfil externo, el agente aplica la fórmula interna con los datos disponibles</td>
+              <td class="p-4 text-gray-500">Usar clasificación interna (días de mora + monto + promesas incumplidas) como fallback hasta que el área de riesgo provea el dato vía API</td>
+            </tr>
             <tr class="bg-yellow-50">
               <td class="p-4 text-gray-700">
                 <strong>Franjas horarias de contacto — Ley 306 de 2026</strong>
@@ -944,6 +1107,54 @@
             </tr>
           </tbody>
         </table>
+      </div>
+    </section>
+
+    <!-- ═══════════════════════════════════════════ -->
+    <!-- BLOQUE 10: IA REAL VS ÁRBOL DE DECISIONES  -->
+    <!-- ═══════════════════════════════════════════ -->
+    <section id="ia-vs-arbol">
+      <div class="inline-block bg-indigo-100 text-indigo-700 rounded-full px-4 py-1 text-xs font-bold uppercase mb-4">Sistema Multi-Agente</div>
+      <h2 class="text-3xl font-extrabold text-gray-900 mb-3">¿Por qué esto es IA agentic y no un chatbot de árbol de decisiones?</h2>
+      <p class="text-gray-500 text-base mb-8 max-w-3xl">
+        El flujo de escalamiento (pago total → cuotas → promesa) define el <em>orden de las ofertas</em>. Dentro de cada paso, el LLM decide <em>cómo</em> decirlo, <em>cuándo</em> insistir, y <em>qué hacer</em> con respuestas inesperadas — eso no es posible con un árbol de decisiones.
+      </p>
+
+      <div class="grid md:grid-cols-2 gap-6">
+        <div class="bg-white rounded-xl border border-red-200 p-6">
+          <h3 class="font-bold text-red-800 mb-4">Un árbol de decisiones haría esto</h3>
+          <div class="space-y-2 text-sm text-gray-700">
+            <div class="flex items-start gap-2"><span class="text-red-400 mt-0.5">✗</span> Si cliente dice "no" → ofrecer cuotas</div>
+            <div class="flex items-start gap-2"><span class="text-red-400 mt-0.5">✗</span> Si cliente dice "no tengo dinero" → ofrecer plan de 3 cuotas</div>
+            <div class="flex items-start gap-2"><span class="text-red-400 mt-0.5">✗</span> Si cliente dice "STOP" → cerrar sesión</div>
+            <div class="flex items-start gap-2"><span class="text-red-400 mt-0.5">✗</span> Si turno > 35 → escalar</div>
+            <div class="flex items-start gap-2 mt-4 p-3 bg-red-50 rounded-lg"><span class="text-red-500">⚠</span> <span class="text-xs">No puede manejar "mi esposa está en el hospital", "ese monto no es correcto", "¿puedo pagar en dólares?", ni ninguna respuesta fuera del script.</span></div>
+          </div>
+        </div>
+
+        <div class="bg-white rounded-xl border border-green-200 p-6">
+          <h3 class="font-bold text-green-800 mb-4">Los agentes de IA hacen esto</h3>
+          <div class="space-y-2 text-sm text-gray-700">
+            <div class="flex items-start gap-2"><span class="text-green-500 mt-0.5">✓</span> Detecta si el cliente evade o genuinamente no puede pagar — y ajusta el tono</div>
+            <div class="flex items-start gap-2"><span class="text-green-500 mt-0.5">✓</span> Interpreta "ahorita no tengo" vs "nunca voy a pagar" — son intenciones distintas</div>
+            <div class="flex items-start gap-2"><span class="text-green-500 mt-0.5">✓</span> Ante "cobro el 15", calcula la fecha de cuota sin regla hardcodeada</div>
+            <div class="flex items-start gap-2"><span class="text-green-500 mt-0.5">✓</span> Responde con empatía a situaciones fuera del script antes de regresar al tema</div>
+            <div class="flex items-start gap-2"><span class="text-green-500 mt-0.5">✓</span> Mantiene coherencia de toda la conversación en memoria — no solo el último turno</div>
+            <div class="flex items-start gap-2"><span class="text-green-500 mt-0.5">✓</span> Invoca herramientas reales (consultar saldo, generar link de pago, registrar en CRM) con contexto de la conversación</div>
+          </div>
+        </div>
+      </div>
+
+      <div class="mt-6 bg-indigo-50 border border-indigo-200 rounded-xl p-5">
+        <h3 class="font-bold text-indigo-900 mb-3">Cómo responde el sistema a las preguntas del assessment</h3>
+        <div class="grid md:grid-cols-2 gap-4 text-sm">
+          <div><span class="font-bold text-indigo-800">¿Cómo sabe el agente con quién hablar?</span><br/><span class="text-gray-600">La campaña carga número de teléfono + datos del cliente desde Billing/CRM. El Agente Validador confirma la identidad antes de iniciar la negociación.</span></div>
+          <div><span class="font-bold text-indigo-800">¿Cómo funciona el agente internamente?</span><br/><span class="text-gray-600">4 agentes especializados con roles distintos, orquestados por Lambda. Cada uno invoca un LLM distinto según la complejidad de su tarea. El historial persiste en S3.</span></div>
+          <div><span class="font-bold text-indigo-800">¿Cómo se integra con sistemas existentes?</span><br/><span class="text-gray-600">Siempre vía API: Billing API (solo lectura) y CRM API (escritura acotada a endpoints específicos). Nunca acceso directo a bases de datos.</span></div>
+          <div><span class="font-bold text-indigo-800">¿Cómo se gestiona y controla el sistema?</span><br/><span class="text-gray-600">AppConfig centraliza reglas de negocio (cuotas, montos, horarios, festivos) — el equipo las actualiza sin redesplegar código. Step Functions orquesta las campañas outbound.</span></div>
+          <div><span class="font-bold text-indigo-800">¿Qué puede salir mal?</span><br/><span class="text-gray-600">DLQ captura fallos para reproceso. Circuit breaker evita timeouts visibles al cliente. WAF bloquea abusos de costo. Bedrock Guardrails filtran respuestas fuera de scope.</span></div>
+          <div><span class="font-bold text-indigo-800">¿Cómo sabemos si funciona?</span><br/><span class="text-gray-600">6 KPIs de negocio (recuperación de cartera, acuerdos, escalamientos) + 4 métricas técnicas (latencia, errores, guardrails) monitoreadas en CloudWatch con alarmas configuradas.</span></div>
+        </div>
       </div>
     </section>
 

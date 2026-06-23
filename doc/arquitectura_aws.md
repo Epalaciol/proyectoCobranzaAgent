@@ -18,6 +18,8 @@ Este documento es la referencia técnica de implementación. La narrativa de neg
 | Historial de promesas incumplidas en CRM | Perfil de riesgo usa 3 señales desde el inicio | Primera campaña usa solo días de mora y monto; perfil aprende |
 | Volumen de morosos simultáneos < 100,000 | SQS FIFO a 300 TPS es suficiente | Migrar a Kinesis Data Streams para >1M simultáneos |
 | Consentimiento de contacto incluido en contrato | Permite contacto outbound sin opt-in adicional | Campaña de opt-in previa al lanzamiento |
+| **Todos los clientes cargados en una campaña son aptos para ser contactados** | El agente podría intentar contactar a clientes con opt-out activo, en lista negra o con restricción legal vigente | La elegibilidad de contacto se valida en el proceso que genera el archivo de campaña (antes de que el agente exista). El agente no valida esta condición — la asume garantizada por quien cargó la campaña |
+| LLA dispone de un área de riesgo que clasifica a los clientes | Sin perfil externo, el agente aplica la fórmula interna como fallback | Usar la clasificación interna (días de mora + monto + promesas incumplidas) como proxy hasta que el área de riesgo provea el dato |
 | Latencia Bedrock (Claude 3.5 Haiku) < 3s | Margen para lograr p95 < 5s incluyendo tools | Circuit breaker con mensaje de "procesando" + respuesta asíncrona |
 | Reglas de negocio cambian semanalmente, no en tiempo real | AppConfig con caché de 60s es adecuado | Reducir TTL a 5s si se requiere actualización más frecuente |
 
@@ -96,13 +98,15 @@ Sí. Un script malicioso enviando 10,000 mensajes genera ~$20 en Bedrock sin WAF
 
 ### Perfil de riesgo del cliente
 
-El perfil se calcula al inicio de cada sesión con datos del Billing API y CRM ya disponibles — no requiere base de datos adicional ni proceso de batch:
+**Supuesto declarado:** Se asume que LLA dispone de un área de riesgo (o equivalente en la operación de cobranza) que ya clasifica a los clientes en segmentos BAJO / MEDIO / ALTO. El agente consume ese perfil como dato de entrada al inicio de la sesión — no lo calcula ni lo reemplaza.
+
+La siguiente fórmula es **ilustrativa** de la lógica que ese proceso debería aplicar, y sirve como fallback si el dato no está disponible en la API:
 
 ```python
-def calcular_perfil_riesgo(billing_data: dict, crm_data: dict) -> str:
+def calcular_perfil_riesgo_fallback(billing_data: dict, crm_data: dict) -> str:
     dias_mora = billing_data["dias_vencido"]
     monto = billing_data["saldo_vencido"]
-    promesas_incumplidas = crm_data.get("promesas_incumplidas", 0)  # default 0 si no existe
+    promesas_incumplidas = crm_data.get("promesas_incumplidas", 0)
 
     if dias_mora <= 15 and monto < 50 and promesas_incumplidas == 0:
         return "BAJO"
@@ -112,7 +116,9 @@ def calcular_perfil_riesgo(billing_data: dict, crm_data: dict) -> str:
         return "ALTO"
 ```
 
-**Actualización dinámica durante la sesión:** El Negociador detecta señales en la respuesta del cliente (hostilidad, evasión, cooperación) y las registra en CRM al finalizar la sesión para enriquecer el perfil en futuras interacciones.
+El campo de perfil en la API puede retornar directamente `"BAJO"`, `"MEDIO"` o `"ALTO"` — el agente lo consume sin recalcular. Si el campo viene vacío, se aplica el fallback anterior.
+
+**Actualización dinámica durante la sesión:** El Negociador detecta señales en la respuesta del cliente (hostilidad, evasión, cooperación) y las registra en CRM al finalizar la sesión para enriquecer el perfil en futuras interacciones. Esta información enriquece al área de riesgo, no reemplaza su criterio.
 
 ---
 
@@ -235,23 +241,55 @@ SQS soporta un delay máximo de 15 minutos por mensaje. Para delays mayores (fin
 
 ### Gestión de opt-out en español
 
-**Opt-out temporal por campaña** (suspensión mínima 30 días — reincorporable si el cliente paga o contacta voluntariamente):
-- STOP, ALTO, PARA, NO ME CONTACTES, BASTA, NO QUIERO
+**Importante — límite de intentos de persuasión:**
+El agente realiza hasta 3 intentos de negociación (pago total → plan de cuotas → promesa con fecha) antes de aceptar un rechazo como definitivo. Un "no me interesa" en el primer turno no cancela la sesión de inmediato — el agente puede intentar abordar la objeción con empatía una o dos veces más. Después del tercer intento sin acuerdo, activa el flujo de cierre o escala.
 
-**Opt-out de canal WhatsApp** (hasta revocación manual o resolución de deuda):
+**Rechazo sostenido** (después de 2–3 intentos sin acuerdo):
+- NO ME INTERESA, NO QUIERO, NO PUEDO, NO TENGO DINERO, BASTA
+
+El agente no insiste más allá del tercer rechazo explícito. Cierra la sesión o programa follow-up según el perfil.
+
+**Opt-out explícito de campaña** (respetado de inmediato — sin intentos adicionales):
+- STOP, ALTO, PARA, NO ME CONTACTES
+
+Estas palabras activan cierre inmediato sin intentar persuadir. El estado se registra en DynamoDB con TTL de 30 días. El proceso de campaña los excluirá de futuros envíos durante ese período.
+
+**Solicitud de gestión de lista de contacto** (el agente no actúa — escala al proceso de negocio):
 - NUNCA MÁS, ELIMÍNAME, NO ME CONTACTES MÁS, QUÍTENME DE SU LISTA
 
-**No interesado ahora** (programar follow-up respetando franja horaria):
+El agente **no tiene capacidad ni autorización para modificar listas de bloqueo**. Ante estas expresiones, registra la solicitud en CRM con motivo `"solicitud_exclusion_canal"` y cierra la sesión indicando al cliente que su solicitud será procesada por el área correspondiente. La inclusión en lista de exclusión permanente es responsabilidad del área de gestión de clientes de LLA, no del agente.
+
+**No disponible ahora** (programar follow-up respetando franja horaria):
 - NO AHORA, DESPUÉS, MÁS TARDE, MAÑANA, EN OTRO MOMENTO, LUEGO
 
 **Solicitud de humano** (escalar inmediatamente con contexto):
 - AGENTE, PERSONA, EJECUTIVO, HABLAR CON ALGUIEN, QUIERO UN HUMANO, ASESOR
 
-La detección es case-insensitive, tolera variantes con/sin acento, y se evalúa antes de invocar el LLM (capa 2 de seguridad). El estado de opt-out se persiste en DynamoDB con TTL de 30 días para opt-out temporal, o sin TTL para opt-out de canal.
+La detección es case-insensitive, tolera variantes con/sin acento, y se evalúa antes de invocar el LLM (capa 2 de seguridad).
 
 ---
 
-## 4. IAM Least Privilege
+## 4. Por qué esto es un sistema de agentes de IA y no un árbol de decisiones
+
+El árbol de escalamiento de la sección 3 describe el **orden de las ofertas**, no el mecanismo de razonamiento. Un árbol de decisiones solo puede seguir ramas fijas: "si dice X, hacer Y". Los agentes de este sistema hacen algo cualitativamente diferente:
+
+**Razonamiento contextual del Negociador (Claude Haiku):**
+- Detecta si el cliente está evadiendo la pregunta o genuinamente no puede pagar — y ajusta el tono sin que se lo indique explícitamente.
+- Interpreta lenguaje ambiguo: "ahorita no tengo" puede ser evasión temporal o dificultad real. El LLM distingue el contexto.
+- Genera respuestas empáticas únicas por cliente — no plantillas intercambiadas. Dos clientes con el mismo perfil reciben mensajes distintos según cómo respondieron.
+- Calcula fechas de cuotas realistas basándose en lo que el cliente dice (ej: "cobro el 15") sin que haya una regla hardcodeada para eso.
+- Mantiene coherencia de toda la conversación en memoria (historial en S3), no solo el último turno.
+
+**Lo que distingue al sistema del assessment:**
+- El árbol de escalamiento define cuándo ofrecer cada opción — eso es lógica de negocio, no IA.
+- Dentro de cada paso del árbol, el LLM decide *cómo* decirlo, *si* es el momento correcto, y *qué hacer* con una respuesta inesperada.
+- Si el cliente responde con algo fuera del script ("mi esposa está en el hospital"), el árbol de decisiones no tiene rama para eso. El Negociador sí lo maneja con empatía y ajusta la conversación.
+
+Los agentes usan Bedrock Agents con tool calling — no son prompts con reglas `if/else` embebidas. El flujo de herramientas (`consultar_saldo`, `registrar_promesa`, `escalar_a_humano`) le da al LLM acceso a acciones reales del sistema, no solo texto.
+
+---
+
+## 5. IAM Least Privilege
 
 ```
 Agent Lambda Role:
@@ -273,7 +311,7 @@ Step Functions Role:
 
 ---
 
-## 5. Observabilidad
+## 6. Observabilidad
 
 **CloudWatch + X-Ray:** Tracing distribuido de Lambda → Bedrock → APIs externas. Dashboard con métricas custom.
 
@@ -294,7 +332,7 @@ Step Functions Role:
 
 ---
 
-## 6. Estimación de Costos
+## 7. Estimación de Costos
 
 ### 10,000 conversaciones / mes
 
@@ -349,7 +387,7 @@ Costo ponderado real (80/20 split): ~$70,000/mes vs $350,000 sin IA — 80% de a
 
 ---
 
-## 7. Visión Futura — Plataforma CX Multi-Agente
+## 8. Visión Futura — Plataforma CX Multi-Agente
 
 Este sistema es el Módulo 1 de una plataforma de Customer Experience completa. La arquitectura de la plataforma completa y la hoja de ruta se describen en `docs/index.html` → sección "Visión Futura".
 

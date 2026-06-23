@@ -3,7 +3,7 @@
 [![Python 3.10+](https://img.shields.io/badge/Python-3.10+-blue?logo=python&logoColor=white)](https://python.org)
 [![LangChain](https://img.shields.io/badge/LangChain-0.3-1C3C3C)](https://langchain.com)
 [![Ollama](https://img.shields.io/badge/Ollama-Llama_3.1-000000)](https://ollama.com)
-[![Tests](https://img.shields.io/badge/Tests-14_passing-brightgreen)](tests/)
+[![Tests](https://img.shields.io/badge/Tests-30_passing-brightgreen)](tests/)
 
 Sistema multi-agente de IA para gestión de cobranza vía WhatsApp. Arquitectura serverless 100% en AWS.
 
@@ -12,6 +12,10 @@ Sistema multi-agente de IA para gestión de cobranza vía WhatsApp. Arquitectura
 **Diseño técnico detallado:** [`doc/arquitectura_aws.md`](doc/arquitectura_aws.md)
 
 ---
+
+## Prototipo local vs. producción AWS
+
+El prototipo usa **Ollama + Llama 3.1** para que puedas correrlo sin credenciales AWS. En producción, el mismo código apunta a **Amazon Bedrock (Claude 3.5 Haiku)** cambiando el cliente LangChain de `ChatOllama` a `ChatBedrock` — dos líneas de código. Los prompts ya se leen desde `prompts.yaml` localmente y desde **AWS AppConfig** en AWS (variable de entorno `APPCONFIG_APP`), sin redespliegue.
 
 ## Ejecutar el prototipo local
 

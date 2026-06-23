@@ -38,6 +38,9 @@ _fake_modules = {
                                    AIMessage=MagicMock,
                                    ToolMessage=MagicMock,
                                ),
+    # prompt_loader se importa en multi_agent; mockeamos get_prompt para no
+    # necesitar prompts.yaml ni PyYAML durante los tests unitarios.
+    "prompt_loader":           MagicMock(get_prompt=MagicMock(return_value="[prompt mock]")),
 }
 
 with patch.dict("sys.modules", _fake_modules):
